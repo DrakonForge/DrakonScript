@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 
 // CRITERION //
 
@@ -442,7 +443,7 @@ function parseSpeechbank(str) {
         return [groupName, speechbankBody];
     }
     
-    throw new SyntaxError("File must start with \"group <group name> ...\"");
+    throw new SyntaxError("Script must start with \"group <group name> ...\"");
 }
 
 // category name {body...}
@@ -751,9 +752,17 @@ function compileSpeechbank(data) {
     
     const fileName = result[0];
     const fileData = result[1];
-    const outPath = "out/" + escape(fileName) + ".json"
+    const outPath = path.join("out", escape(fileName) + ".json")
     fs.writeFileSync(outPath, JSON.stringify(fileData, null, 2));
-    success("Compiled successfully to " + outPath);
+    success("Compiled speechbank to " + outPath);
+}
+
+function isFile(path) {
+    return fs.existsSync(path) && fs.lstatSync(path).isFile();
+}
+
+function isDirectory(path) {
+    return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
 }
 
 // Config
@@ -816,6 +825,10 @@ function main(args) {
     }
     
     if(mode == "standard") {
+        if(!isFile(filePath)) {
+            error("Error: " + filePath + " is not a valid file!");
+            return;
+        }
         log("Parsing speechbank file: " + filePath);
         const data = fs.readFileSync(filePath, "utf8");
         compileSpeechbank(data);
@@ -824,7 +837,24 @@ function main(args) {
     } else if(mode == "listpreset") {
         log("Parsing list preset file: " + filePath);
     } else if(mode == "all") {
+        if(!isDirectory(filePath)) {
+            error("Error: " + filePath + " is not a valid directory!");
+            return;
+        }
         log("Compiling all scripts inside: " + filePath);    
+        files = fs.readdirSync(filePath);
+        files.forEach((file, index) => {
+            let innerFilePath = path.join(filePath, file);
+            if(isDirectory(innerFilePath)) {
+                // do something
+            } else if(isFile(innerFilePath)) {
+                //log("Parsing speechbank file: " + innerFilePath);
+                const data = fs.readFileSync(innerFilePath, "utf8");
+                compileSpeechbank(data);
+            } else {
+                error("Error: Unknown file " + innerFilePath);
+            }
+        });
     }
     
     const end = Date.now();
