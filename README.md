@@ -1,4 +1,4 @@
-# Scripting Language for Contextual Dialogue
+# DrakonScript: A Scripting Language for Contextual Dialogue
 
 This language compiles to JSON.
 
