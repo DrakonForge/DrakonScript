@@ -272,10 +272,26 @@ function parseRuleBody(str, obj) {
         throw new SyntaxError("Speech lines were not defined for this block!");
     }
     
+    // Check for slash delimiters
+    for(let i = 0; i < lines.length; ++i) {
+        if(typeof lines[i] === "string") {
+            if(lines[i].indexOf('/') > -1) {
+                lines[i] = splitAndTrim(lines[i], '/');
+            }
+        }
+    }
     validateSpeechLines(lines);
     obj["line"] = lines;
 
     return obj;
+}
+
+function splitAndTrim(str, delimiter) {
+    arr = str.trim().split(delimiter);
+    for(let i = 0; i < arr.length; ++i) {
+        arr[i] = arr[i].trim(0);
+    }
+    return arr;
 }
 
 function splitRuleBody(str) {
@@ -682,7 +698,7 @@ function isSnakeCase(str) {
     }
     return true;
 }
-// TODO: Allow slashes to be used to make multi-lines? "a / b" -> ["a", "b"]
+
 // TODO: Optional: Fix comments
 // TODO: Add definitions for the preset files and compiling all
 // TODO: Option to compile all, maybe with a flag to aid compilation
