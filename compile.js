@@ -1,14 +1,15 @@
-const fs = require("fs");
-const path = require("path");
-const logger = require("./src/logger");
-const parser = require("./src/parser");
+"use strict"
+import { writeFileSync, existsSync, lstatSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { logger } from "./src/logger.js"
+import { parseSpeechbank } from "./src/parser.js"
 
 // MAIN //
 
 function compileSpeechbank(data) {
     let result;
     try {
-        result = parser.parseSpeechbank(data);
+        result = parseSpeechbank(data);
     } catch(err) {
         logger.error("Failed to parse! " + err.name + ": " + err.message);
         return;
@@ -16,17 +17,17 @@ function compileSpeechbank(data) {
     
     const fileName = result[0];
     const fileData = result[1];
-    const outPath = path.join("out", escape(fileName) + ".json")
-    fs.writeFileSync(outPath, JSON.stringify(fileData, null, 2));
+    const outPath = join("out", escape(fileName) + ".json")
+    writeFileSync(outPath, JSON.stringify(fileData, null, 2));
     logger.success("Compiled speechbank to " + outPath);
 }
 
 function isFile(path) {
-    return fs.existsSync(path) && fs.lstatSync(path).isFile();
+    return existsSync(path) && lstatSync(path).isFile();
 }
 
 function isDirectory(path) {
-    return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
+    return existsSync(path) && lstatSync(path).isDirectory();
 }
 
 // Config
@@ -78,7 +79,7 @@ function main(args) {
             return;
         }
         logger.log("Parsing speechbank file: " + filePath);
-        const data = fs.readFileSync(filePath, "utf8");
+        const data = readFileSync(filePath, "utf8");
         compileSpeechbank(data);
     } else if(mode == "rulepreset") {
         // Parse rule presets
@@ -93,13 +94,13 @@ function main(args) {
             return;
         }
         logger.log("Compiling all scripts inside: " + filePath);    
-        files = fs.readdirSync(filePath);
+        let files = readdirSync(filePath);
         files.forEach((file, index) => {
-            let innerFilePath = path.join(filePath, file);
+            let innerFilePath = join(filePath, file);
             if(isDirectory(innerFilePath)) {
                 // do something
             } else if(isFile(innerFilePath)) {
-                const data = fs.readFileSync(innerFilePath, "utf8");
+                const data = readFileSync(innerFilePath, "utf8");
                 compileSpeechbank(data);
             } else {
                 logger.error("Error: Unknown file " + innerFilePath);

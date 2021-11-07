@@ -1,4 +1,5 @@
-const logger = require("./logger");
+"use strict"
+import { logger } from "./logger.js"
 
 // CRITERION //
 
@@ -37,7 +38,7 @@ const CRITERION = {
 };
 
 function criterionWithKey(key, type, value) {
-    obj = {};
+    let obj = {};
     let firstDotIndex = key.indexOf(".");
     if(firstDotIndex > -1) {
         obj["table"] = key.substring(0, firstDotIndex);
@@ -89,7 +90,7 @@ function parseCriterion(str) {
     str = str.trim();
     let type = null;
     let result = null;
-    for(k in CRITERION) {
+    for(let k in CRITERION) {
         result = CRITERION[k].exec(str);
         if(result != null) {
             type = k;
@@ -287,7 +288,7 @@ function parseRuleBody(str, obj) {
 }
 
 function splitAndTrim(str, delimiter) {
-    arr = str.trim().split(delimiter);
+    let arr = str.trim().split(delimiter);
     for(let i = 0; i < arr.length; ++i) {
         arr[i] = arr[i].trim(0);
     }
@@ -310,7 +311,7 @@ function splitRuleBody(str) {
             item = "";
         } else if(ch == '[') {
             // Escape nested brackets
-            level = -1;
+            let level = -1;
             do {
                 ch = str.charAt(i);
                 if(ch == '[') {
@@ -580,7 +581,7 @@ function splitStatements(str) {
             item = "";
         } else if(ch == '{') {
             // Escape curly brackets
-            level = -1;
+            let level = -1;
             do {
                 ch = str.charAt(i);
                 if(ch == '{') {
@@ -595,7 +596,7 @@ function splitStatements(str) {
             --i;
         } else if(ch == '[') {
             // Escape square brackets
-            level = -1;
+            let level = -1;
             do {
                 ch = str.charAt(i);
                 if(ch == '[') {
@@ -625,7 +626,7 @@ function splitStatements(str) {
 // VALIDATION //
 
 function validateSpeechLines(lines) {
-    for(line of lines) {
+    for(let line of lines) {
         if(Array.isArray(line)) {
             if(line.length <= 0) {
                 logger.warn("Warning: Speechline contains empty list in " + lines);
@@ -648,7 +649,7 @@ function validateSpeechLines(lines) {
             nextSymbol = line.indexOf('@', fromIndex);
             if(nextSymbol > -1) {
                 fromIndex = nextSymbol + 1;
-                nextSpace = line.indexOf(' ', fromIndex);
+                let nextSpace = line.indexOf(' ', fromIndex);
                 if(nextSpace < 0) {
                     nextSpace = line.length;
                 }
@@ -712,6 +713,4 @@ function validateField(field, fieldName) {
     }
 }
 
-module.exports = {
-    parseSpeechbank
-};
+export { parseSpeechbank };
