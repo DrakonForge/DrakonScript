@@ -1,5 +1,8 @@
 "use strict"
-import { logger } from "./logger.js"
+import { logger as builtInLogger } from "./logger.js"
+
+// Allow logger to change behavior
+let logger = builtInLogger;
 
 // CRITERION //
 
@@ -700,6 +703,10 @@ function isSnakeCase(str) {
     return true;
 }
 
+function setLogger(obj) {
+    console.log(logger);
+}
+
 // TODO: Optional: Fix comments
 // TODO: Add definitions for the preset files and compiling all
 // TODO: Option to compile all, maybe with a flag to aid compilation
@@ -713,4 +720,4 @@ function validateField(field, fieldName) {
     }
 }
 
-export { parseSpeechbank };
+export { parseSpeechbank, setLogger };

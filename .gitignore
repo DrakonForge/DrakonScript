@@ -1,3 +1,6 @@
 out/
+__pycache__
 scripts/
 *.lnk
+web_server.py
+launch_web_server.bat
