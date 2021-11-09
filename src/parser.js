@@ -15,6 +15,12 @@ export const parser = (() => {
         "equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
         // x.y = true
         "equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*(true|false)$/,
+        // x.y = "string"
+        "not_equals_string": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*"(.*?)"$/,
+        // x.y = -3.0
+        "not_equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
+        // x.y = true
+        "not_equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*(true|false)$/,
         // x.y > 3
         "greater_than": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
         // x.y >= 3
@@ -41,7 +47,7 @@ export const parser = (() => {
         "preset": /^([a-zA-Z][a-zA-Z_\-0-9]*)$/
     };
 
-    function criterionWithKey(key, type, value) {
+    function criterionWithKey(key, type, value, inverse) {
         let obj = {};
         let firstDotIndex = key.indexOf(".");
         if(firstDotIndex > -1) {
@@ -57,6 +63,10 @@ export const parser = (() => {
         obj["type"] = type;
         if(value != null) {
             obj["value"] = value;
+        }
+        
+        if(inverse) {
+            obj["inverse"] = true;
         }
 
         return obj;
@@ -83,15 +93,20 @@ export const parser = (() => {
         return value;
     }
 
-    function toRange(key, min, max) {
+    function toRange(key, min, max, inverse) {
         if(min == max) {
-            return criterionWithKey(key, "equals", min);
+            return criterionWithKey(key, "equals", min, inverse);
         }
-        return criterionWithKey(key, "range", [min, max]);
+        return criterionWithKey(key, "range", [min, max], inverse);
     }
 
     function parseCriterion(str) {
         str = str.trim();
+        let inverse = false;
+        if(str.charAt(0) == '!') {
+            inverse = true;
+            str = str.substring(1).trim();
+        }
         let type = null;
         let result = null;
         for(let k in CRITERION) {
@@ -110,42 +125,57 @@ export const parser = (() => {
 
         switch(type) {
             case "equals_string":
-                return criterionWithKey(result[1], "equals", result[2]);
+                return criterionWithKey(result[1], "equals", result[2], inverse);
             case "equals_number":
-                return criterionWithKey(result[1], "equals", parseFloat(result[2]));
+                return criterionWithKey(result[1], "equals", parseFloat(result[2]), inverse);
             case "equals_boolean":
-                return criterionWithKey(result[1], "equals", toBoolean(result[2]));
+                return criterionWithKey(result[1], "equals", toBoolean(result[2]), inverse);
+            case "not_equals_string":
+                return criterionWithKey(result[1], "equals", result[2], !inverse);
+            case "not_equals_number":
+                return criterionWithKey(result[1], "equals", parseFloat(result[2]), !inverse);
+            case "not_equals_boolean":
+                return criterionWithKey(result[1], "equals", toBoolean(result[2]), !inverse);
             case "greater_than":
-                return criterionWithKey(result[1], "min", modifyIfInteger(result[2], 1));
+                return criterionWithKey(result[1], "min", modifyIfInteger(result[2], 1), inverse);
             case "greater_equal":
-                return criterionWithKey(result[1], "min", parseFloat(result[2]));
+                return criterionWithKey(result[1], "min", parseFloat(result[2]), inverse);
             case "less_than":
-                return criterionWithKey(result[1], "max", modifyIfInteger(result[2], -1));
+                return criterionWithKey(result[1], "max", modifyIfInteger(result[2], -1), inverse);
             case "less_equal":
-                return criterionWithKey(result[1], "max", parseFloat(result[2]));
+                return criterionWithKey(result[1], "max", parseFloat(result[2]), inverse);
             case "lt_lt":
                 min = modifyIfInteger(result[1], 1);
                 max = modifyIfInteger(result[3], -1);
-                return toRange(result[2], min, max);
+                return toRange(result[2], min, max, inverse);
             case "lt_le":
                 min = modifyIfInteger(result[1], 1);
                 max = parseFloat(result[3]);
-                return toRange(result[2], min, max);
+                return toRange(result[2], min, max, inverse);
             case "le_lt":
                 min = parseFloat(result[1]);
                 max = modifyIfInteger(result[3], -1);
-                return toRange(result[2], min, max);
+                return toRange(result[2], min, max, inverse);
             case "le_le":
                 min = parseFloat(result[1]);
                 max = parseFloat(result[3]);
-                return toRange(result[2], min, max);
+                return toRange(result[2], min, max, inverse);
             case "exists":
-                return criterionWithKey(result[1], "equals", null);
+                return criterionWithKey(result[1], "equals", null, inverse);
             case "dummy":
+                if(inverse) {
+                    throw new SyntaxError("Dummy criterion cannot be inversed");
+                }
                 return { "type": "dummy", "value": parseInt(result[1]) };
             case "fail":
+                if(inverse) {
+                    throw new SyntaxError("Fail criterion cannot be inversed");
+                }
                 return { "type": "fail", "value": parseFloat(result[1]) };
             case "preset":
+                if(inverse) {
+                    throw new SyntaxError("Preset criterion cannot be inversed");
+                }
                 return result[1];
             default:
                 throw new SyntaxError("Unknown criterion type for \"" + str + "\"");
