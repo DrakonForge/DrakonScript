@@ -2,14 +2,14 @@
 import { writeFileSync, existsSync, lstatSync, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { logger } from "./src/logger.js"
-import { parseSpeechbank } from "./src/parser.js"
+import { parser } from "./src/parser.js"
 
 // MAIN //
 
 function compileSpeechbank(data) {
     let result;
     try {
-        result = parseSpeechbank(data);
+        result = parser.parseSpeechbank(data);
     } catch(err) {
         logger.error("Failed to parse! " + err.name + ": " + err.message);
         return;
