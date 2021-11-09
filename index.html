@@ -1,0 +1,70 @@
+<html>
+
+<head>
+    <title>DrakonScript Code Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- https://cdnjs.com/libraries/codemirror -->
+    <link rel="stylesheet" href="style/reset.css" />
+    <link rel="stylesheet" href="style/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/theme/base16-dark.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/theme/base16-light.min.css" />
+    <link rel="stylesheet" href="style/vscode-dark.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/scroll/simplescrollbars.min.css" />
+    
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/edit/matchbrackets.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/edit/closebrackets.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/search/match-highlighter.min.js"></script>
+    <script type="text/javascript" src="site/drakonscript-lang.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/javascript/javascript.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/scroll/simplescrollbars.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="menu themed">
+            <div class="left-align">Theme:</div>
+            <div class="select-container theme-container themed left-align">
+                <select name="select select-theme" class="select-theme">
+                    <option value="vscode-dark" selected="selected">VS Code</option>
+                    <option value="default">CodeMirror Light</option>
+                    <option value="base16-light">Base 16 Light</option>
+                    <option value="base16-dark">Base 16 Dark</option>
+                </select>
+            </div>
+            <div class="left-align">Font Size:</div>
+            <div class="select-container font-container themed left-align">
+                <select name="select select-font" class="select-font">
+                    <option value=12>12</option>
+                    <option value=14>14</option>
+                    <option value=15>15</option>
+                    <option value=16 selected="selected">16</option>
+                    <option value=18>18</option>
+                    <option value=20>20</option>
+                </select>
+            </div>
+            <div class="compile-container right-align">
+                <button class="button-compile">Compile</button>
+            </div>
+            
+        </div>
+        <div class="editor-container">
+            <div id="drakonscript" class="editor"></div>
+            <div class="horizontal-resizer editor-resizer"></div>
+            <div class="output-container">
+                <div id="json" class="editor"></div>
+                <div class="vertical-resizer output-resizer"></div>
+                <div id="console" class="console themed"></div>
+            </div>
+        </div>
+        <div class="footer themed"></div>
+    </div>
+    
+    <script type="module" src="site/index.js"></script>
+</body>
+
+</html>
