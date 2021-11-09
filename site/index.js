@@ -32,6 +32,7 @@ const SUPPORTED_THEMES = ["default", "vscode-dark", "base16-light", "base16-dark
 const DEFAULT_THEME = "vscode-dark";
 const DEFAULT_FONT_SIZE = 16;
 const TAB_SIZE = 2;
+const MIN_VISIBLE_PERC = 30;
 const SAMPLE_PROGRAM = `
 group fruit_vendor extends townsfolk {
   list FRUIT = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
@@ -84,12 +85,14 @@ group fruit_vendor extends townsfolk {
 // EDITOR SETUP //
 // https://codemirror.net/doc/manual.html#config
 
+let hasChanged = false;
 let drknEditor = CodeMirror($("#drakonscript")[0], {
     "value": SAMPLE_PROGRAM,
     "mode": "drakonscript",
     "theme": DEFAULT_THEME,
     "indentUnit": TAB_SIZE,
     "tabSize": TAB_SIZE,
+    "indentWithTabs": false,
     "smartIndent": true,
     "electricChars": true,
     "lineNumbers": true,
@@ -98,6 +101,9 @@ let drknEditor = CodeMirror($("#drakonscript")[0], {
     "matchBrackets": true,
     "scrollbarStyle": "overlay"
 });
+drknEditor.on("change", function(cm, change) {
+    hasChanged = true;
+});
 
 let jsonEditor = CodeMirror($("#json")[0], {
     "value": "",
@@ -105,6 +111,7 @@ let jsonEditor = CodeMirror($("#json")[0], {
     "theme": DEFAULT_THEME,
     "indentUnit": TAB_SIZE,
     "tabSize": TAB_SIZE,
+    "indentWithTabs": false,
     "smartIndent": true,
     "electricChars": true,
     "lineNumbers": false,
@@ -126,14 +133,26 @@ const createHorizontalSplit = (() => {
         let leftWidth = 0;
         editors = editors || [];
         
+        const getDividerWidth = function() {
+            const windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+            return (DIVIDER_WIDTH * 100.0 / windowWidth);
+        };
+        
+        const getLeftWidth = function() {
+            // How far the mouse has been moved
+            return (leftSide[0].getBoundingClientRect().width * 100) / resizer[0].parentNode.getBoundingClientRect().width;
+        };
+        
+        const getRightWidth = function() {
+            return 100 - getLeftWidth() - getDividerWidth();
+        };
+        
         const mouseMoveHandler = function(e) {
             //https://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
 
-            // How far the mouse has been moved
             const dx = e.clientX - x;
-
-            let newLeftWidth = ((leftWidth + dx) * 100) / resizer[0].parentNode.getBoundingClientRect().width;
-            updateWidth(newLeftWidth);
+            const leftPercent = ((leftWidth + dx) * 100) / resizer[0].parentNode.getBoundingClientRect().width;
+            updateWidth(leftPercent);
             
             resizer.css("cursor", "col-resize");
             $(document.body).css("cursor", "col-resize");
@@ -181,8 +200,7 @@ const createHorizontalSplit = (() => {
         };
         
         const updateWidth = function(leftPercent) {
-            const windowWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-            const dividerPercent = (DIVIDER_WIDTH * 100.0 / windowWidth);
+            const dividerPercent = getDividerWidth();
             let rightPercent = 100.0 - leftPercent - dividerPercent;
 
             if(leftPercent < MIN_COLLAPSE_PERC) {
@@ -218,7 +236,7 @@ const createHorizontalSplit = (() => {
         }
         
         return {
-            updateWidth  
+            updateWidth, getLeftWidth, getRightWidth, getDividerWidth
         };
     };
 })();
@@ -233,15 +251,28 @@ const createVerticalSplit = (() => {
         let y = 0;
         let topHeight = 0;
         editors = editors || [];
+        
+        const getDividerWidth = function() {
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+            return (DIVIDER_WIDTH * 100 / windowHeight);
+        };
+        
+        const getTopWidth = function() {
+            // How far the mouse has been moved
+            return (topSide[0].getBoundingClientRect().height * 100) / resizer[0].parentNode.getBoundingClientRect().height;
+        };
+        
+        const getBotWidth = function() {
+            return 100 - getTopWidth() - getDividerWidth();
+        };
 
         const mouseMoveHandler = function(e) {
             //https://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
 
             // How far the mouse has been moved
             const dy = e.clientY - y;
-
-            let newLeftWidth = ((topHeight + dy) * 100) / resizer[0].parentNode.getBoundingClientRect().height;
-            updateWidth(newLeftWidth);
+            const topPercent = ((topHeight + dy) * 100) / resizer[0].parentNode.getBoundingClientRect().height;
+            updateWidth(topPercent);
 
             resizer.css("cursor", "row-resize");
             $(document.body).css("cursor", "row-resize");
@@ -289,8 +320,7 @@ const createVerticalSplit = (() => {
         };
 
         const updateWidth = function(topPercent) {
-            const windowHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-            const dividerPercent = (DIVIDER_WIDTH * 100 / windowHeight);
+            const dividerPercent = getDividerWidth();
             let botPercent = 100 - topPercent - dividerPercent;
 
             if(topPercent < MIN_COLLAPSE_PERC) {
@@ -326,7 +356,7 @@ const createVerticalSplit = (() => {
         }
 
         return {
-            updateWidth
+            updateWidth, getTopWidth, getBotWidth, getDividerWidth
         };
     };
 })();
@@ -335,17 +365,20 @@ const createVerticalSplit = (() => {
 
 function compile() {
     logger.clear();
+    clearJSON();
     let text = drknEditor.getValue();
     let result;
     try {
         result = parser.parseSpeechbank(text);
     } catch(err) {
         logger.error("Failed to parse! " + err.name + ": " + err.message);
+        ensureConsoleVisible();
         return;
     }
     logger.success("Compiled successfully!");
     let resultText = JSON.stringify(result[1], null, TAB_SIZE);
     jsonEditor.setValue(resultText);
+    ensureJSONVisible();
 }
 
 let currentTheme = "";
@@ -359,11 +392,185 @@ function setTheme(theme) {
     drknEditor.setOption("theme", theme);
     jsonEditor.setOption("theme", theme);
     currentTheme = theme;
+    localStorage.setItem(THEME_KEY, theme);
 }
 
 function setFontSize(fontSize) {
     $(".CodeMirror").css("font-size", fontSize + "px");
     $("#console").css("font-size", fontSize + "px");
+    localStorage.setItem(FONT_SIZE_KEY, fontSize);
+}
+
+// TODO: Copy + download functions for both code windows
+
+const COMPRESSION_FORMAT = "Base64";
+const SAVE_KEY = "drakonscript-save";
+function save() {
+    const data = drknEditor.getValue()
+    const compressed = LZUTF8.compress(data, { "outputEncoding": COMPRESSION_FORMAT });
+    localStorage.setItem(SAVE_KEY, compressed);
+    logger.success("Successfully saved to local storage! Size: " + (byteCount(compressed) / 1000) + "kB");
+    hasChanged = false;
+}
+
+function load() {
+    const compressed = localStorage.getItem(SAVE_KEY);
+    if(compressed == null || compressed.length <= 0) {
+        return;
+    }
+    const data = LZUTF8.decompress(compressed, { "inputEncoding": COMPRESSION_FORMAT });
+    drknEditor.setValue(data);
+    logger.log("Successfully loaded from local storage! Size: " + (byteCount(compressed) / 1000) + "kB");
+}
+
+function autosave() {
+    if(hasChanged) {
+        logger.log("Autosaving...");
+        save();
+    }
+}
+
+function byteCount(s) {
+    return encodeURI(s).split(/%..|./).length - 1;
+}
+
+function downloadDrakonScript() {
+    const value = drknEditor.getValue();
+    if(value.length <= 0) {
+        logger.warn("Nothing to download!");
+        return;
+    }
+    logger.log("Downloading...");
+    let fileName = parser.getName(value);
+    if(fileName == null) {
+        fileName = "script";
+    }
+    downloadFile(fileName + ".drkn", value);
+    logger.success("Created file!");
+}
+
+function copyDrakonScript() {
+    copyToClipboard(drknEditor.getValue());
+}
+
+function downloadJSON() {
+    const value = jsonEditor.getValue();
+    if(value.length <= 0) {
+        logger.warn("Nothing to download!");
+        return;
+    }
+    
+    logger.log("Downloading...");
+
+    let fileName;
+    try {
+        const parsed = parser.parseSpeechbank(drknEditor.getValue());
+        fileName = parsed[0];
+    } catch(err) {
+        fileName = "script";
+    }
+
+    downloadFile(fileName + ".json", value);
+    logger.success("Created file!");
+}
+
+function copyJSON() {
+    copyToClipboard(jsonEditor.getValue());
+}
+
+function clearJSON() {
+    jsonEditor.setValue("");
+}
+
+// https://stackoverflow.com/questions/16215771/how-to-open-select-file-dialog-via-js
+function uploadDrakonScript() {
+    logger.log("Waiting for the user to provide a file...");
+    $(".file-input").trigger("click");
+}
+
+function ensureDrakonScriptVisible() {
+    const leftPercent = editorSplit.getLeftWidth();
+    console.log(leftPercent);
+    if(leftPercent < MIN_VISIBLE_PERC) {
+        editorSplit.updateWidth(MIN_VISIBLE_PERC);
+    }
+}
+
+function ensureJSONVisible() {
+    const rightPercent = editorSplit.getRightWidth();
+    if(rightPercent < MIN_VISIBLE_PERC) {
+        editorSplit.updateWidth(100 - MIN_VISIBLE_PERC - editorSplit.getDividerWidth());
+    }
+
+    const topPercent = outputSplit.getTopWidth();
+    if(topPercent < MIN_VISIBLE_PERC) {
+        outputSplit.updateWidth(MIN_VISIBLE_PERC);
+    }
+}
+
+function ensureConsoleVisible() {
+    const rightPercent = editorSplit.getRightWidth();
+    if(rightPercent < MIN_VISIBLE_PERC) {
+        editorSplit.updateWidth(100 - MIN_VISIBLE_PERC - editorSplit.getDividerWidth());
+    }
+
+    const botPercent = outputSplit.getBotWidth();
+    if(botPercent < MIN_VISIBLE_PERC) {
+        outputSplit.updateWidth(100 - MIN_VISIBLE_PERC - outputSplit.getDividerWidth());
+    }
+}
+
+function copyToClipboard(str) {
+    if(!navigator.clipboard) {
+        // use old commandExec() way
+        const el = document.createElement('textarea');
+        el.value = str;
+        el.select();
+        document.execCommand('copy');
+        logger.success("Successfully copied to clipboard!");
+    } else {
+        navigator.clipboard.writeText(str).then(
+            function () {
+                logger.success("Successfully copied to clipboard!");
+            })
+            .catch(function () {
+                    logger.error("Failed to copy to clipboard!");
+                });
+    }
+}
+
+// https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
+function downloadFile(filename, text) {
+    const element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+const FONT_SIZE_KEY = "drakonscript-font-size";
+const THEME_KEY = "drakonscript-theme";
+function loadSettings() {
+    let fontSize = localStorage.getItem(FONT_SIZE_KEY);
+    if(fontSize == null) {
+        fontSize = DEFAULT_FONT_SIZE;
+    }
+    setFontSize(fontSize);
+    $(".select-font").val(fontSize);
+    
+    let theme = localStorage.getItem(THEME_KEY);
+    if(theme == null) {
+        theme = DEFAULT_THEME;
+    }
+    setTheme(theme);
+    $(".select-theme").val(theme);
+    
+    logger.success("Settings loaded!");
 }
 
 // EVENTS //
@@ -380,14 +587,94 @@ $(".button-compile").on("click", function() {
     compile();
 });
 
+$(".button-save").on("click", function () {
+    save();
+});
+
+$(".button-upload").on("click", function() {
+   uploadDrakonScript(); 
+});
+
+$(".button-download-drkn").on("click", function() {
+    downloadDrakonScript();
+});
+
+$(".button-download-json").on("click", function() {
+    downloadJSON();
+});
+
+$(".button-copy-drkn").on("click", function () {
+    copyDrakonScript();
+});
+
+$(".button-copy-json").on("click", function () {
+    copyJSON();
+});
+
+$(window).bind("keydown", function (event) {
+    if(event.ctrlKey || event.metaKey) {
+        switch(String.fromCharCode(event.which).toLowerCase()) {
+            case 's':
+                event.preventDefault();
+                save();
+                break;
+            case 'r':
+                event.preventDefault();
+                compile();
+                break;
+        }
+    }
+});
+
+$(".file-input").on("change", e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.readAsText(file, "UTF-8");
+
+    logger.log("Attempting to load file...");
+    reader.onload = readerEvent => {
+        const content = readerEvent.target.result;
+        drknEditor.setValue(content);
+        logger.success("Successfully loaded file!");
+        clearJSON();
+        ensureDrakonScriptVisible();
+    };
+});
+
+window.onbeforeunload = function(e) {
+    e = e || window.event;
+    
+    // Do not prompt user if all changes are saved
+    if(!hasChanged) {
+        return null;
+    }
+    
+    // For IE and Firefox prior to version 4
+    if(e) {
+        e.returnValue = "Reload site? You may still have unsaved changes.";
+    }
+
+    // For Safari
+    return "Reload site? You may still have unsaved changes.";
+}
+
+// Autosaving
+const AUTOSAVE_INTERVAL = 30 * 1000;
+setInterval(autosave, AUTOSAVE_INTERVAL);
+
 // INIT //
 
+let editorSplit;
+let outputSplit;
 function init() {
     parser.setLogger(logger);
-    setTheme(DEFAULT_THEME);
-    setFontSize(DEFAULT_FONT_SIZE);
-    const editorSplit = createHorizontalSplit($(".editor-resizer"), [drknEditor, jsonEditor], 70);
-    const outputSplit = createVerticalSplit($(".output-resizer"), [jsonEditor], 70);
+    loadSettings();
+    editorSplit = createHorizontalSplit($(".editor-resizer"), [drknEditor, jsonEditor], 70);
+    outputSplit = createVerticalSplit($(".output-resizer"), [jsonEditor], 70);
+    load();
     compile();
 }
-init();
+
+$(function() {
+    init();
+});

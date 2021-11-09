@@ -31,6 +31,10 @@ select::-ms-expand {
   line-height: normal;
 }
 
+.hidden {
+  display: none;
+}
+
 /* SCROLLBAR */
 
 ::-webkit-scrollbar {
@@ -95,12 +99,12 @@ select::-ms-expand {
   vertical-align: middle;
 }
 
-.menu .left-align {
+.left-align {
   float: left;
   margin-left: 5px;
 }
 
-.menu .right-align {
+.right-align {
   float: right;
   margin-right: 5px;
 }
@@ -113,6 +117,7 @@ select::-ms-expand {
   background-color: #fff;
   background-image: linear-gradient(to top, #f9f9f9, #fff 33%);
   line-height: normal;
+  margin-bottom: -5px;
 }
 
 .theme-container {
@@ -121,6 +126,11 @@ select::-ms-expand {
 
 .font-container {
   width: 75px;
+}
+
+.button-compile {
+  background: #5eba7d !important;
+  font-weight: bold;
 }
 
 /* WINDOW RESIZERS */
@@ -155,8 +165,8 @@ select::-ms-expand {
   flex-direction: row;
   width: 100%;
   margin-top: 25px;
-  margin-bottom: 10px;
-  height: calc(100% - 25px - 10px);
+  margin-bottom: 15px;
+  height: calc(100% - 25px - 15px);
 }
 
 #drakonscript {
@@ -206,9 +216,21 @@ p.success {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 10px;
+  font-size: 12px;
+  height: 15px;
+  line-height: 15px;
   border-top: 1px solid #aaaaaa;
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
+  font-family: monospace;
+}
+
+.footer div {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.footer a {
+  color: inherit;
 }

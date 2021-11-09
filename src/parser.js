@@ -502,7 +502,7 @@ export const parser = (() => {
     // Remove all comments in the program
     // Note: This does not escape strings
     function removeComments(str) {
-        return str.trim().replace(COMMENTS, "");
+        return str.trim().replace(COMMENTS, "").trim();
     }
 
     // HELPERS //
@@ -721,7 +721,21 @@ export const parser = (() => {
         }
     }
     
+    function getName(str) {
+        str = removeComments(str);
+        let firstLineEnd = str.indexOf("\n");
+        if(firstLineEnd < 0) {
+            return null;
+        }
+        let firstLine = str.substring(0, firstLineEnd);
+        let words = firstLine.split(" ");
+        if(words[0] == "group" && words.length >= 2) {
+            return words[1];
+        }
+        return null;
+    }
+    
     return {
-        parseSpeechbank, setLogger
+        parseSpeechbank, setLogger, getName
     };
 })();

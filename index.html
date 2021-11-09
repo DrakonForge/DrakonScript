@@ -13,8 +13,8 @@
     <link rel="stylesheet" href="style/vscode-dark.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/scroll/simplescrollbars.min.css" />
     
-    
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <!--<script src="https://code.jquery.com/ui/1.13.0/jquery-ui.min.js" integrity="sha256-hlKLmzaRlE8SCJC1Kw8zoUbU8BxA+8kR3gseuKfMjxA=" crossorigin="anonymous"></script>-->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/edit/matchbrackets.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/addon/edit/closebrackets.min.js"></script>
@@ -30,25 +30,51 @@
             <div class="left-align">Theme:</div>
             <div class="select-container theme-container themed left-align">
                 <select name="select select-theme" class="select-theme">
-                    <option value="vscode-dark" selected="selected">VS Code</option>
-                    <option value="default">CodeMirror Light</option>
-                    <option value="base16-light">Base 16 Light</option>
+                    <option value="vscode-dark">VS Code</option>
                     <option value="base16-dark">Base 16 Dark</option>
+                    <option value="base16-light">Base 16 Light</option>
+                    <option value="default">CodeMirror Light</option>
                 </select>
             </div>
+            
             <div class="left-align">Font Size:</div>
             <div class="select-container font-container themed left-align">
                 <select name="select select-font" class="select-font">
                     <option value=12>12</option>
                     <option value=14>14</option>
                     <option value=15>15</option>
-                    <option value=16 selected="selected">16</option>
+                    <option value=16>16</option>
                     <option value=18>18</option>
                     <option value=20>20</option>
                 </select>
             </div>
+            
+            <div class="upload-container left-align">
+                <button class="button-upload">Load From File</button>
+            </div>
+            
+            <div class="copy-drkn-container left-align">
+                <button class="button-copy-drkn">Copy DrakonScript</button>
+            </div>
+            
+            <div class="download-drkn-container left-align">
+                <button class="button-download-drkn">Download DrakonScript</button>
+            </div>
+            
             <div class="compile-container right-align">
-                <button class="button-compile">Compile</button>
+                <button class="button-compile" title="Shortcut: Ctrl-R">Compile</button>
+            </div>
+            
+            <div class="save-container right-align">
+                <button class="button-save" title="Shortcut: Ctrl-S">Save</button>
+            </div>
+            
+            <div class="download-json-container right-align">
+                <button class="button-download-json">Download JSON</button>
+            </div>
+            
+            <div class="copy-json-container right-align">
+                <button class="button-copy-json">Copy JSON</button>
             </div>
             
         </div>
@@ -61,9 +87,16 @@
                 <div id="console" class="console themed"></div>
             </div>
         </div>
-        <div class="footer themed"></div>
+        <div class="footer themed">
+            <div class="left-align">DrakonScript Code Editor v1.0</div>
+            <div class="right-align"><a href="https://github.com/Drakonkinst/DrakonScript/" target="_blank">(Source)</a></div>
+            <div class="right-align">Made by Drakonkinst</div>
+        </div>
     </div>
+    <input class="hidden file-input" type="file" name="drakonscript-upload"/>
     
+    <!-- https://github.com/rotemdan/lzutf8.js/ -->
+    <script id="lzutf8" src="https://cdn.jsdelivr.net/npm/lzutf8/build/production/lzutf8.min.js"></script>
     <script type="module" src="site/index.js"></script>
 </body>
 
