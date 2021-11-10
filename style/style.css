@@ -239,3 +239,7 @@ p.success {
 .footer a {
   color: inherit;
 }
+
+.made-by-drakonkinst {
+  text-decoration: none;
+}
