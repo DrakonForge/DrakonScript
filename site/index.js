@@ -116,6 +116,8 @@ let jsonEditor = CodeMirror($("#json")[0], {
     "electricChars": true,
     "lineNumbers": false,
     "autoCloseBrackets": true,
+    "highlightSelectionMatches": true,
+    "matchBrackets": true,
     "scrollbarStyle": "overlay"
 });
 

@@ -179,6 +179,11 @@ select::-ms-expand {
   flex: 1;
 }
 
+.cm-matchhighlight {
+  background: #ffdf6588 !important;
+  color: #ffdf65 !important;
+}
+
 #json {
   width: 100%;
   height: 50%;
@@ -202,11 +207,11 @@ p.warn {
 }
 
 p.error {
-  color: darkred !important;
+  color: #ff6961 !important;
 }
 
 p.success {
-  color: green !important;
+  color: #5eba7d !important;
 }
 
 /* FOOTER */
