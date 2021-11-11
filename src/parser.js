@@ -127,13 +127,14 @@ export const parser = (() => {
             throw new SyntaxError("Unable to parse criterion \"" + str + "\"");
         }
 
-        let min, max;
+        let min, max, value;
 
         switch(type) {
             case "equals_string":
                 return criterionWithKey(result[1], "equals", result[2], inverse);
             case "equals_number":
-                return criterionWithKey(result[1], "equals", parseFloat(result[2]), inverse);
+                value = parseFloat(result[2]);
+                return criterionWithKey(result[1], "equals", value, inverse);
             case "equals_boolean":
                 return criterionWithKey(result[1], "equals", toBoolean(result[2]), inverse);
             case "not_equals_string":
@@ -143,11 +144,23 @@ export const parser = (() => {
             case "not_equals_boolean":
                 return criterionWithKey(result[1], "equals", toBoolean(result[2]), !inverse);
             case "greater_than":
-                return criterionWithKey(result[1], "min", modifyIfInteger(result[2], 1), inverse);
+                value = parseFloat(result[2]);
+                if(isInteger(value)) {
+                    value = modifyIfInteger(value, 1);
+                } else {
+                    logger.warn("Warning: " + result[1] + " > " + value + " is interpreted as " + result[1] + " >= " + value + " instead, you might want to change this to avoid ambiguity");
+                }
+                return criterionWithKey(result[1], "min", value, inverse);
             case "greater_equal":
                 return criterionWithKey(result[1], "min", parseFloat(result[2]), inverse);
             case "less_than":
-                return criterionWithKey(result[1], "max", modifyIfInteger(result[2], -1), inverse);
+                value = parseFloat(result[2]);
+                if(isInteger(value)) {
+                    value = modifyIfInteger(value, -1);
+                } else {
+                    logger.warn("Warning: " + result[1] + " < " + value + " is interpreted as " + result[1] + " <= " + value + " instead, you might want to change this to avoid ambiguity");
+                }
+                return criterionWithKey(result[1], "max", value, inverse);
             case "less_equal":
                 return criterionWithKey(result[1], "max", parseFloat(result[2]), inverse);
             case "lt_lt":
