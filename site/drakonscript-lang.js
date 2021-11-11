@@ -43,7 +43,8 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       "category": C,
       "rule": kw("export"),
       "fail": operator,
-      "dummy": operator
+      "dummy": operator,
+      "exists": C
     };
   }();
 

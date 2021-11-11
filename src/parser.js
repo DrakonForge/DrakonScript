@@ -84,18 +84,24 @@ export const parser = (() => {
     function isInteger(num) {
         return num % 1 == 0;
     }
+    
+    function isBothInteger(a, b) {
+        return isInteger(a) && isInteger(b);
+    }
 
-    function modifyIfInteger(str, modifier) {
-        let value = parseFloat(str);
-        if(isInteger(value)) {
-            return value + modifier;
+    function modifyIfInteger(num, modifier) {
+        if(isInteger(num)) {
+            return num + modifier;
         }
-        return value;
+        return num;
     }
 
     function toRange(key, min, max, inverse) {
         if(min == max) {
             return criterionWithKey(key, "equals", min, inverse);
+        }
+        if(min > max) {
+            throw new SyntaxError("Error: No possible value between " + min + " and " + max + ", this criterion will never be true");
         }
         return criterionWithKey(key, "range", [min, max], inverse);
     }
@@ -145,23 +151,39 @@ export const parser = (() => {
             case "less_equal":
                 return criterionWithKey(result[1], "max", parseFloat(result[2]), inverse);
             case "lt_lt":
-                min = modifyIfInteger(result[1], 1);
-                max = modifyIfInteger(result[3], -1);
+                min = parseFloat(result[1]);
+                max = parseFloat(result[3]);
+                if(isBothInteger(min, max)) {
+                    min = modifyIfInteger(min, 1);
+                    max = modifyIfInteger(max, -1);
+                } else {
+                    logger.warn("Warning: " + min + " < " + result[2] + " < " + max + " is interpreted as " + min + " <= " + result[2] + " <= " + max + " instead, you might want to change this to avoid ambiguity");
+                }
                 return toRange(result[2], min, max, inverse);
             case "lt_le":
-                min = modifyIfInteger(result[1], 1);
+                min = parseFloat(result[1]);
                 max = parseFloat(result[3]);
+                if(isBothInteger(min, max)) {
+                    min = modifyIfInteger(min, 1);
+                } else {
+                    logger.warn("Warning: " + min + " < " + result[2] + " <= " + max + " is interpreted as " + min + " <= " + result[2] + " <= " + max + " instead, you might want to change this to avoid ambiguity");
+                }
                 return toRange(result[2], min, max, inverse);
             case "le_lt":
                 min = parseFloat(result[1]);
-                max = modifyIfInteger(result[3], -1);
+                max = parseFloat(result[3]);
+                if(isBothInteger(min, max)) {
+                    max = modifyIfInteger(max, -1);
+                } else {
+                    logger.warn("Warning: " + min + " <= " + result[2] + " < " + max + " is interpreted as " + min + " <= " + result[2] + " <= " + max + " instead, you might want to change this to avoid ambiguity");
+                }
                 return toRange(result[2], min, max, inverse);
             case "le_le":
                 min = parseFloat(result[1]);
                 max = parseFloat(result[3]);
                 return toRange(result[2], min, max, inverse);
             case "exists":
-                return criterionWithKey(result[1], "equals", null, inverse);
+                return criterionWithKey(result[1], "exists", null, inverse);
             case "dummy":
                 if(inverse) {
                     throw new SyntaxError("Dummy criterion cannot be inversed");
@@ -200,7 +222,7 @@ export const parser = (() => {
     const STANDARD_RULE = /^rule[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
     // rule label (criteria...) {body...}
     const LABELLED_RULE = /^rule[ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
-    function parseRule(str) {
+    function parseRule(str, allLabels) {
         str = str.trim();
         let result;
         let obj = {};
@@ -216,7 +238,14 @@ export const parser = (() => {
         // Rule statement with label
         result = LABELLED_RULE.exec(str);
         if(result != null) {
-            obj["label"] = result[1];
+            let label = result[1];
+            
+            if(allLabels.includes(label)) {
+                throw new SyntaxError("Label \"" + label + "\" already exists in this speechbank");
+            }
+            
+            allLabels.push(label);
+            obj["label"] = label;
             let criteriaStr = result[2];
             let bodyStr = result[3];
             return createRule(criteriaStr, bodyStr, obj);
@@ -270,6 +299,9 @@ export const parser = (() => {
                     throw new SyntaxError("Speech line is already defined in this block");
                 }
                 lines = parseList(result[1], true);
+                if(lines.length <= 0) {
+                    throw new SyntaxError("Speech lines cannot be empty");
+                }
                 continue;
             }
 
@@ -404,7 +436,11 @@ export const parser = (() => {
             if(!allowInnerList) {
                 throw new SyntaxError("This list does not allow inner lists!");
             }
-            return parseList(result[1], false);
+            let innerList = parseList(result[1], false);
+            if(result.length <= 0) {
+                throw new SyntaxError("Inner list of speech lines cannot be empty");
+            }
+            return innerList;
         }
 
         throw new SyntaxError("Unable to parse list item \"" + str + "\"");
@@ -412,7 +448,7 @@ export const parser = (() => {
 
     // CATEGORY //
 
-    function parseCategory(str, obj) {
+    function parseCategory(str, obj, allLabels) {
         str = str.trim();
 
         let result = CATEGORY.exec(str);
@@ -422,7 +458,7 @@ export const parser = (() => {
 
         let categoryName = result[1];
         validateField(categoryName, "category name");
-        let rules = parseCategoryBody(result[2]);
+        let rules = parseCategoryBody(result[2], allLabels);
         if(obj.hasOwnProperty(categoryName)) {
             throw new SyntaxError("Category \"" + categoryName + "\" is already defined!");
         }
@@ -432,13 +468,13 @@ export const parser = (() => {
         return obj;
     }
 
-    function parseCategoryBody(str) {
+    function parseCategoryBody(str, allLabels) {
         str = str.trim();
         let tokenList = splitStatements(str);
         let rules = [];
 
         for(let tokenStr of tokenList) {
-            rules.push(parseRule(tokenStr))
+            rules.push(parseRule(tokenStr, allLabels))
         }
 
         return rules;
@@ -487,6 +523,7 @@ export const parser = (() => {
         let speechbank = {};
         let lists = {};
         let tokenList = splitStatements(str);
+        let allLabels = [];
 
         for(let tokenStr of tokenList) {
             tokenStr = tokenStr.trim();
@@ -495,7 +532,7 @@ export const parser = (() => {
             // Category statement
             result = CATEGORY.exec(tokenStr);
             if(result != null) {
-                parseCategory(tokenStr, speechbank);
+                parseCategory(tokenStr, speechbank, allLabels);
                 continue;
             }
 
@@ -504,6 +541,9 @@ export const parser = (() => {
             if(result != null) {
                 let listName = result[1];
                 let listContents = parseList(result[2], false);
+                if(listContents.length <= 0) {
+                    throw new SyntaxError("List cannot be empty");
+                }
                 if(lists.hasOwnProperty(listName)) {
                     throw new SyntaxError("List \"" + listName + "\" is already defined in this block");
                 }
