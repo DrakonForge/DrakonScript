@@ -15,11 +15,11 @@ export const parser = (() => {
         "equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
         // x.y = true
         "equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*(true|false)$/,
-        // x.y = "string"
+        // x.y != "string"
         "not_equals_string": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*"(.*?)"$/,
-        // x.y = -3.0
+        // x.y != -3.0
         "not_equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
-        // x.y = true
+        // x.y != true
         "not_equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*(true|false)$/,
         // x.y > 3
         "greater_than": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
@@ -44,16 +44,37 @@ export const parser = (() => {
         // fail 0.3
         "fail": /^fail [ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
         // is_big_folk
-        "preset": /^([a-zA-Z][a-zA-Z_\-0-9]*)$/
+        "preset": /^([a-zA-Z][a-zA-Z_\-0-9]*)$/,
+        // x.y = x.z
+        "equals_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // x.y != x.z
+        "not_equals_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // x.y < x.z
+        "less_than_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*<[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // x.y <= x.z
+        "less_equal_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*<=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // x.y > x.z
+        "greater_than_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // x.y >= x.z
+        "greater_equal_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/
     };
 
-    function criterionWithKey(key, type, value, inverse) {
-        let obj = {};
+    function extractTable(key) {
         let firstDotIndex = key.indexOf(".");
         if(firstDotIndex > -1) {
-            obj["table"] = key.substring(0, firstDotIndex);
-            validateField(obj["table"], "table")
-            obj["field"] = key.substring(firstDotIndex + 1);
+            return key.substring(0, firstDotIndex);
+        }
+        return null;
+    }
+    
+    function criterionWithKey(key, type, value, inverse) {
+        let obj = {};
+        let table = extractTable(key);
+        
+        if(table != null) {
+            obj["table"] = table;
+            obj["field"] = key.substring(table.length + 1);
+            validateField(table, "table");
         } else {
             obj["field"] = key;
         }
@@ -104,6 +125,38 @@ export const parser = (() => {
             throw new SyntaxError("Error: No possible value between " + min + " and " + max + ", this criterion will never be true");
         }
         return criterionWithKey(key, "range", [min, max], inverse);
+    }
+    
+    function handleDynamicCriterion(key1, key2, type, inverse) {
+        let obj = {};
+        
+        let table1 = extractTable(key1);
+        if(table1 != null) {
+            obj["table"] = table1;
+            validateField(table1, "table");
+            obj["field"] = key1.substring(table1.length + 1);
+        } else {
+            obj["field"] = key1;
+        }
+        validateField(obj["field"], "field");
+        
+        obj["type"] = type;
+
+        let table2 = extractTable(key2);
+        if(table2 != null) {
+            obj["other_table"] = table2;
+            validateField(table2, "table");
+            obj["other_field"] = key2.substring(table2.length + 1);
+        } else {
+            obj["other_field"] = key2;
+        }
+        validateField(obj["other_field"], "field");
+        
+        if(inverse) {
+            obj["inverse"] = true;
+        }
+        
+        return obj;
     }
 
     function parseCriterion(str) {
@@ -212,6 +265,18 @@ export const parser = (() => {
                     throw new SyntaxError("Preset criterion cannot be inversed");
                 }
                 return result[1];
+            case "equals_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "equals_dynamic", inverse);
+            case "not_equals_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "equals_dynamic", !inverse);
+            case "less_than_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "less_than_dynamic", inverse);
+            case "less_equal_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "less_equal_dynamic", inverse);
+            case "greater_than_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "greater_than_dynamic", inverse);
+            case "greater_equal_dynamic":
+                return handleDynamicCriterion(result[1], result[2], "greater_equal_dynamic", inverse);
             default:
                 throw new SyntaxError("Unknown criterion type for \"" + str + "\"");
         }
