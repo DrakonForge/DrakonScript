@@ -827,7 +827,8 @@ export const parser = (() => {
     }
 
     function isPunctuation(ch) {
-        return ch == '!' || ch == '.' || ch == '?' || ch == ',';
+        return ch == '!' || ch == '.' || ch == '?' || ch == ','
+            || ch == '[' || ch == ']' || ch == '{' || ch == '}';
     }
 
     const MACRO_CASE = /^[A-Z_0-9]+$/;
