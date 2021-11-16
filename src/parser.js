@@ -300,7 +300,7 @@ export const parser = (() => {
     const STANDARD_RULE = /^rule[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
     // rule label (criteria...) {body...}
     const LABELLED_RULE = /^rule[ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
-    function parseRule(str, allLabels) {
+    function parseRule(str, allLabels, predefinedSymbols) {
         str = str.trim();
         let result;
         let obj = {};
@@ -310,7 +310,7 @@ export const parser = (() => {
         if(result != null) {
             let criteriaStr = result[1];
             let bodyStr = result[2];
-            return createRule(criteriaStr, bodyStr, obj);
+            return createRule(criteriaStr, bodyStr, obj, predefinedSymbols);
         }
 
         // Rule statement with label
@@ -326,13 +326,13 @@ export const parser = (() => {
             obj["label"] = label;
             let criteriaStr = result[2];
             let bodyStr = result[3];
-            return createRule(criteriaStr, bodyStr, obj);
+            return createRule(criteriaStr, bodyStr, obj, predefinedSymbols);
         }
 
         throw new SyntaxError("Unable to parse rule \"" + str + "\"");
     }
 
-    function createRule(criteriaStr, bodyStr, obj) {
+    function createRule(criteriaStr, bodyStr, obj, predefinedSymbols) {
         let presets = [];
         let criteria = parseCriteria(criteriaStr);
 
@@ -350,7 +350,7 @@ export const parser = (() => {
             obj["rule"] = criteria;
         }
 
-        parseRuleBody(bodyStr, obj);
+        parseRuleBody(bodyStr, obj, predefinedSymbols);
         return obj;
     }
 
@@ -359,13 +359,18 @@ export const parser = (() => {
     // lines = "label"
     const LINES_LABEL_STATEMENT = /^lines[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9\-_]*)"$/;
     // list name = [items...]
-    const LIST_STATEMENT = /^list[ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)[ \t]*=[ \t]*\[([.\S\s]*?)\]$/;
-    function parseRuleBody(str, obj) {
+    const LIST_STATEMENT = /^list [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)[ \t]*=[ \t]*\[([.\S\s]*?)\]$/;
+    // predefined symbol SYMBOL
+    const PREDEFINED_SYMBOL_STATEMENT = /^predefined symbol [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)$/;
+    // symbol X = "key"
+    const SYMBOL_STATEMENT = /^symbol [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9\-._]*)"$/
+    function parseRuleBody(str, obj, predefinedSymbols) {
         str = str.trim();
         let result;
         let tokenList = splitRuleBody(str);
         let lines = null;
         let lists = {};
+        let symbols = {};
 
         for(let tokenStr of tokenList) {
             tokenStr = tokenStr.trim();
@@ -405,12 +410,43 @@ export const parser = (() => {
                 lists[listName] = listContents;
                 continue;
             }
+            
+            result = PREDEFINED_SYMBOL_STATEMENT.exec(tokenStr);
+            if(result != null) {
+                let symbolName = result[1];
+                if(predefinedSymbols.includes(symbolName) || symbols.hasOwnProperty(symbolName)) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" is already defined in this block");
+                }
+                validateSymbol(symbolName);
+                predefinedSymbols.push(symbolName);
+                continue;
+            }
+            
+            result = SYMBOL_STATEMENT.exec(tokenStr);
+            if(result != null) {
+                let symbolName = result[1];
+                let value = result[2];
+                if(predefinedSymbols.includes(symbolName) || symbols.hasOwnProperty(symbolName)) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" is already defined in this block");
+                }
+                validateSymbol(symbolName);
+                symbols[symbolName] = value;
+                continue;
+            }
 
             throw new SyntaxError("Unable to parse statement in speech body \"" + tokenStr + "\"");
         }
 
         if(Object.keys(lists).length > 0) {
             obj["lists"] = lists;
+        }
+        
+        if(Object.keys(symbols).length > 0) {
+            obj["symbols"] = symbols;
+        }
+        
+        if(predefinedSymbols.length > 0) {
+            obj["predefined_symbols"] = predefinedSymbols;
         }
 
         if(lines == null) {
@@ -526,7 +562,7 @@ export const parser = (() => {
 
     // CATEGORY //
 
-    function parseCategory(str, obj, allLabels) {
+    function parseCategory(str, obj, allLabels, predefinedSymbols) {
         str = str.trim();
 
         let result = CATEGORY.exec(str);
@@ -536,7 +572,7 @@ export const parser = (() => {
 
         let categoryName = result[1];
         validateField(categoryName, "category name");
-        let rules = parseCategoryBody(result[2], allLabels);
+        let rules = parseCategoryBody(result[2], allLabels, predefinedSymbols);
         if(obj.hasOwnProperty(categoryName)) {
             throw new SyntaxError("Category \"" + categoryName + "\" is already defined!");
         }
@@ -546,13 +582,13 @@ export const parser = (() => {
         return obj;
     }
 
-    function parseCategoryBody(str, allLabels) {
+    function parseCategoryBody(str, allLabels, predefinedSymbols) {
         str = str.trim();
         let tokenList = splitStatements(str);
         let rules = [];
 
         for(let tokenStr of tokenList) {
-            rules.push(parseRule(tokenStr, allLabels))
+            rules.push(parseRule(tokenStr, allLabels, predefinedSymbols))
         }
 
         return rules;
@@ -600,6 +636,8 @@ export const parser = (() => {
         str = str.trim();
         let speechbank = {};
         let lists = {};
+        let symbols = {};
+        let predefinedSymbols = [];
         let tokenList = splitStatements(str);
         let allLabels = [];
 
@@ -610,7 +648,7 @@ export const parser = (() => {
             // Category statement
             result = CATEGORY.exec(tokenStr);
             if(result != null) {
-                parseCategory(tokenStr, speechbank, allLabels);
+                parseCategory(tokenStr, speechbank, allLabels, predefinedSymbols);
                 continue;
             }
 
@@ -629,12 +667,53 @@ export const parser = (() => {
                 lists[listName] = listContents;
                 continue;
             }
+            
+            result = PREDEFINED_SYMBOL_STATEMENT.exec(tokenStr);
+            if(result != null) {
+                let symbolName = result[1];
+                if(predefinedSymbols.includes(symbolName) || symbols.hasOwnProperty(symbolName)) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" is already defined in this block");
+                }
+                validateSymbol(symbolName);
+                predefinedSymbols.push(symbolName);
+                continue;
+            }
+
+            result = SYMBOL_STATEMENT.exec(tokenStr);
+            if(result != null) {
+                let symbolName = result[1];
+                let value = result[2];
+                if(predefinedSymbols.includes(symbolName) || symbols.hasOwnProperty(symbolName)) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" is already defined in this block");
+                }
+                validateSymbol(symbolName);
+                let table = extractTable(value);
+                if(table == null) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" context key must define a table explicitly");
+                }
+                validateField(table, "table");
+                let field = value.substring(table.length + 1);
+                validateField(field, "field");
+                symbols[symbolName] = {
+                    "table": table,
+                    "field": field
+                };
+                continue;
+            }
 
             throw new SyntaxError("Unable to parse statement in speechbank body \"" + tokenStr + "\"");
         }
 
         if(Object.keys(lists).length > 0) {
             obj["lists"] = lists;
+        }
+        
+        if(Object.keys(symbols).length > 0) {
+            obj["symbols"] = symbols;
+        }
+
+        if(predefinedSymbols.length > 0) {
+            obj["predefined_symbols"] = predefinedSymbols;
         }
 
         if(Object.keys(speechbank).length > 0) {
