@@ -364,15 +364,6 @@ export const parser = (() => {
     const PREDEFINED_SYMBOL_STATEMENT = /^predefined symbol [ \t]*([a-zA-Z][a-zA-Z0-9_]*)$/;
     // symbol X = "key"
     const SYMBOL_STATEMENT = /^symbol [ \t]*([a-zA-Z][a-zA-Z0-9_]*)[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9._]*)"$/
-    // set x.y = 3
-    // Also handle invert, increment, and decrement
-    const SET_EQUAL = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\=[ \t]*([.\S\s]*?)$/;
-    const SET_ADD = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\+=[ \t]*([.\S\s]*?)$/;
-    const SET_SUB = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\-=[ \t]*([.\S\s]*?)$/;
-    const SET_MULT = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\*=[ \t]*([.\S\s]*?)$/;
-    const SET_DIV = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\/=[ \t]*([.\S\s]*?)$/;
-    const REMOVE = /^remove ([a-zA-Z][a-zA-Z0-9._]*)$/;
-    const TRIGGER = /^trigger [ \t]*([.\S\s]*?)$/;
     function parseRuleBody(str, obj, predefinedSymbols) {
         str = str.trim();
         let result;
@@ -380,6 +371,7 @@ export const parser = (() => {
         let lines = null;
         let lists = {};
         let symbols = {};
+        let actions = [];
 
         for(let tokenStr of tokenList) {
             tokenStr = tokenStr.trim();
@@ -420,6 +412,7 @@ export const parser = (() => {
                 continue;
             }
             
+            // Predefined symbol
             result = PREDEFINED_SYMBOL_STATEMENT.exec(tokenStr);
             if(result != null) {
                 let symbolName = result[1];
@@ -431,6 +424,7 @@ export const parser = (() => {
                 continue;
             }
             
+            // Symbol
             result = SYMBOL_STATEMENT.exec(tokenStr);
             if(result != null) {
                 let symbolName = result[1];
@@ -440,6 +434,12 @@ export const parser = (() => {
                 }
                 validateSymbol(symbolName);
                 symbols[symbolName] = value;
+                continue;
+            }
+            
+            let action = handleActions(tokenStr);
+            if(action != null) {
+                actions.push(action);
                 continue;
             }
 
@@ -472,7 +472,171 @@ export const parser = (() => {
         }
         validateSpeechLines(lines);
         obj["line"] = lines;
+        
+        if(actions.length > 0) {
+            obj["actions"] = actions;
+        }
 
+        return obj;
+    }
+    
+    // set x.y = 3
+    const SET_EQUAL = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\=[ \t]*([.\S\s]+?)$/;
+    const SET_ADD = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\+=[ \t]*([.\S\s]+?)$/;
+    const SET_SUB = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\-=[ \t]*([.\S\s]+?)$/;
+    const SET_MULT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\*=[ \t]*([.\S\s]+?)$/;
+    const SET_DIV = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\/=[ \t]*([.\S\s]+?)$/;
+    const REMOVE = /^remove [ \t]*([a-zA-Z][a-zA-Z0-9._]*)$/;
+    const TRIGGER = /^trigger [ \t]*([.\S\s]*?)$/;
+    const INCREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)\+\+$/;
+    const DECREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)\-\-$/;
+    const INVERT = /^invert [ \t]*([a-zA-Z][a-zA-Z0-9._]*)$/;
+    const NUMBER = /^([+-]?[0-9]*[.]?[0-9]+)$/;
+    const BOOLEAN = /^(true|false)$/;
+    const CONTEXT = /^([a-zA-Z][a-zA-Z0-9._]*)$/;
+    function handleActions(tokenStr) {
+        let result;
+        
+        result = TRIGGER.exec(tokenStr);
+        if(result != null) {
+            // TODO: Parse arguments
+            return createAction("trigger", null, result[1]);
+        }
+        
+        result = REMOVE.exec(tokenStr);
+        if(result != null) {
+            return createAction("remove", result[1], null);
+        }
+        
+        result = INCREMENT.exec(tokenStr);
+        if(result != null) {
+            return createAction("plus", result[1], 1);
+        }
+
+        result = DECREMENT.exec(tokenStr);
+        if(result != null) {
+            return createAction("plus", result[1], -1);
+        }
+        
+        result = SET_ADD.exec(tokenStr);
+        if(result != null) {
+            let value = parseFloat(result[2]);
+            if(isNaN(value)) {
+                logger.error("Cannot add by \"" + result[2] + "\"");
+                return null;
+            }
+            return createAction("add", result[1], value);
+        }
+        
+        result = SET_SUB.exec(tokenStr);
+        if(result != null) {
+            let value = parseFloat(result[2]);
+            if(isNaN(value)) {
+                logger.error("Cannot subtract by \"" + result[2] + "\"");
+                return null;
+            }
+            return createAction("add", result[1], -value);
+        }
+        
+        result = SET_MULT.exec(tokenStr);
+        if(result != null) {
+            let value = parseFloat(result[2]);
+            if(isNaN(value)) {
+                logger.error("Cannot multiply by \"" + result[2] + "\"");
+                return null;
+            }
+            return createAction("mult", result[1], value);
+        }
+        
+        result = SET_DIV.exec(tokenStr);
+        if(result != null) {
+            let value = parseFloat(result[2]);
+            if(isNaN(value)) {
+                logger.error("Cannot divide by \"" + result[2] + "\"");
+                return null;
+            }
+            if(value == 0) {
+                logger.error("Cannot divide by zero");
+                return null;
+            }
+            return createAction("mult", result[1], 1 / value);
+        }
+        
+        result = INVERT.exec(tokenStr);
+        if(result != null) {
+            return createAction("invert", result[1], null);
+        }
+        
+        result = SET_EQUAL.exec(tokenStr);
+        if(result != null) {
+            let value = result[2].trim();
+            let valueResult;
+            
+            // TODO: Change to matches
+            valueResult = CONTEXT.exec(value);
+            if(valueResult != null) {
+                let otherKey = null;
+                let table = extractTable(value);
+                if(table != null) {
+                    field = value.substring(table.length + 1);
+                    validateField(table, "table");
+                    validateField(field, "field");
+                    otherKey = {
+                        "table": table,
+                        "field": field
+                    };
+                } else {
+                    validateField(value, "field");
+                    otherKey = {
+                        "field": value
+                    };
+                }
+                return createAction("equal_dynamic", result[1], otherKey)
+            }
+            
+            valueResult = STRING.exec(value);
+            if(valueResult != null) {
+                return createAction("equal_string", result[1], value);
+            }
+            
+            valueResult = NUMBER.exec(value);
+            if(valueResult != null) {
+                return createAction("equal_number", result[1], parseFloat(value));
+            }
+            
+            valueResult = BOOLEAN.exec(value);
+            if(valueResult != null) {
+                return createAction("equal_boolean", result[1], toBoolean(value));
+            }
+            
+            return null;
+        }
+        
+        return null;
+    }
+    
+    function createAction(type, key, value) {
+        // Split key into table and field
+        let obj = {
+            "type": type
+        };
+        
+        if(key != null) {
+            let table = extractTable(key);
+            if(table != null) {
+                obj["table"] = table;
+                validateField(table, "table");
+                obj["field"] = key.substring(table.length + 1);
+            } else {
+                obj["field"] = key;
+            }
+            validateField(obj["field"], "field");
+        }
+        
+        if(value != null) {
+            obj["value"] = value;
+        }
+        
         return obj;
     }
 
