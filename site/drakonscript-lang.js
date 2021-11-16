@@ -38,6 +38,7 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       
       // DrakonScript
       "group": C,
+      "preset": C,
       "list": C,
       "symbol": C,
       "predefined": C,

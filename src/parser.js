@@ -600,6 +600,9 @@ export const parser = (() => {
     const ROOT_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*{([.\S\s]*?)}$/;
     // group name extends parent {body...}
     const CHILD_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*) [ \t]*extends [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*{([.\S\s]*?)}$/;
+    // preset {body...}
+    const PRESET = /^preset[ \t]*{([.\S\s]*?)}$/;
+    const PRESET_NAME = "preset";
     function parseSpeechbank(str) {
         str = removeComments(str);
         let result;
@@ -618,13 +621,25 @@ export const parser = (() => {
         if(result != null) {
             let groupName = result[1];
             validateField(groupName, "group name");
+            if(groupName == PRESET_NAME) {
+                logger.warn("\"" + PRESET_NAME + "\" is a reserved group name, use \"preset { ... }\" instead!")
+            }
             let parent = result[2];
             validateField(parent, "parent");
+            if(parent == PRESET_NAME) {
+                logger.warn("Parent \"" + PRESET_NAME + "\" is redundant, can leave this blank");
+            }
             let obj = {
                 "parent": parent
             };
             let speechbankBody = parseSpeechbankBody(result[3], obj);
             return [groupName, speechbankBody];
+        }
+        
+        result = PRESET.exec(str);
+        if(result != null) {
+            let speechbankBody = parseSpeechbankBody(result[1], {});
+            return [PRESET_NAME, speechbankBody]
         }
 
         throw new SyntaxError("Script must start with \"group <group name> ...\"");
