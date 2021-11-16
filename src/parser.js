@@ -299,7 +299,7 @@ export const parser = (() => {
     // rule (criteria...) {body...}
     const STANDARD_RULE = /^rule[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
     // rule label (criteria...) {body...}
-    const LABELLED_RULE = /^rule[ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
+    const LABELLED_RULE = /^rule[ \t]*([a-zA-Z][a-zA-Z._0-9]*)[ \t]*\(([.\S\s]*?)\)[ \t]*{([.\S\s]*?)}$/;
     function parseRule(str, allLabels, predefinedSymbols) {
         str = str.trim();
         let result;
@@ -357,13 +357,22 @@ export const parser = (() => {
     // lines = [lines...]
     const LINES_STATEMENT = /^lines[ \t]*=[ \t]*\[([.\S\s]*?)\]$/;
     // lines = "label"
-    const LINES_LABEL_STATEMENT = /^lines[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9\-_]*)"$/;
+    const LINES_LABEL_STATEMENT = /^lines[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9_]*)"$/;
     // list name = [items...]
-    const LIST_STATEMENT = /^list [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)[ \t]*=[ \t]*\[([.\S\s]*?)\]$/;
+    const LIST_STATEMENT = /^list [ \t]*([a-zA-Z][a-zA-Z0-9_]*)[ \t]*=[ \t]*\[([.\S\s]*?)\]$/;
     // predefined symbol SYMBOL
-    const PREDEFINED_SYMBOL_STATEMENT = /^predefined symbol [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)$/;
+    const PREDEFINED_SYMBOL_STATEMENT = /^predefined symbol [ \t]*([a-zA-Z][a-zA-Z0-9_]*)$/;
     // symbol X = "key"
-    const SYMBOL_STATEMENT = /^symbol [ \t]*([a-zA-Z][a-zA-Z0-9\-_]*)[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9\-._]*)"$/
+    const SYMBOL_STATEMENT = /^symbol [ \t]*([a-zA-Z][a-zA-Z0-9_]*)[ \t]*=[ \t]*"([a-zA-Z][a-zA-Z0-9._]*)"$/
+    // set x.y = 3
+    // Also handle invert, increment, and decrement
+    const SET_EQUAL = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\=[ \t]*([.\S\s]*?)$/;
+    const SET_ADD = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\+=[ \t]*([.\S\s]*?)$/;
+    const SET_SUB = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\-=[ \t]*([.\S\s]*?)$/;
+    const SET_MULT = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\*=[ \t]*([.\S\s]*?)$/;
+    const SET_DIV = /^set ([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\/=[ \t]*([.\S\s]*?)$/;
+    const REMOVE = /^remove ([a-zA-Z][a-zA-Z0-9._]*)$/;
+    const TRIGGER = /^trigger [ \t]*([.\S\s]*?)$/;
     function parseRuleBody(str, obj, predefinedSymbols) {
         str = str.trim();
         let result;
@@ -597,9 +606,9 @@ export const parser = (() => {
     // SPEECHBANK //
 
     // group name {body...}
-    const ROOT_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*{([.\S\s]*?)}$/;
+    const ROOT_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z._0-9]*)[ \t]*{([.\S\s]*?)}$/;
     // group name extends parent {body...}
-    const CHILD_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*) [ \t]*extends [ \t]*([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*{([.\S\s]*?)}$/;
+    const CHILD_GROUP = /^group [ \t]*([a-zA-Z][a-zA-Z._0-9]*) [ \t]*extends [ \t]*([a-zA-Z][a-zA-Z._0-9]*)[ \t]*{([.\S\s]*?)}$/;
     // preset {body...}
     const PRESET = /^preset[ \t]*{([.\S\s]*?)}$/;
     const PRESET_NAME = "preset";
@@ -646,7 +655,7 @@ export const parser = (() => {
     }
 
     // category name {body...}
-    const CATEGORY = /^category ([a-zA-Z][a-zA-Z.\-_0-9]*)[ \t]*{([.\S\s]*?)}$/;
+    const CATEGORY = /^category ([a-zA-Z][a-zA-Z._0-9]*)[ \t]*{([.\S\s]*?)}$/;
     function parseSpeechbankBody(str, obj) {
         str = str.trim();
         let speechbank = {};
