@@ -150,7 +150,6 @@ This repository features two methods of parsing DrakonScript:
    - Alternatively, you can run `node compile.js --all <folder>` to attempt to compile every script in the given folder.
 
 2) A custom web-based editor built for developing with DrakonScript, using [CodeMirror](https://codemirror.net/) and [jQuery](https://jquery.com/) among other libraries. Try it out [**here**](https://drakonforge.github.io/DrakonScript/)!
-   - Details
    - If you want to develop using your own code editor, I found that JavaScript-based syntax highlighting works best, though you will most likely need to disable error highlighting. There are numerous solutions to this end; for [Visual Studio Code](https://code.visualstudio.com/) I made a private **DrakonScript Language Extension** to differentiate these from normal JavaScript files.
 
 ## How to Use the Web Editor
