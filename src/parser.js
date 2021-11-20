@@ -488,8 +488,8 @@ export const parser = (() => {
     const SET_DIV = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\/=[ \t]*([.\S\s]+?)$/;
     const REMOVE = /^remove [ \t]*([a-zA-Z][a-zA-Z0-9._]*)$/;
     const TRIGGER = /^trigger [ \t]*([.\S\s]*?)$/;
-    const INCREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)\+\+$/;
-    const DECREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)\-\-$/;
+    const INCREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\+\+$/;
+    const DECREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\-\-$/;
     const INVERT = /^invert [ \t]*([a-zA-Z][a-zA-Z0-9._]*)$/;
     const NUMBER = /^([+-]?[0-9]*[.]?[0-9]+)$/;
     const BOOLEAN = /^(true|false)$/;
