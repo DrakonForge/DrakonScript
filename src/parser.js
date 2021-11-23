@@ -570,9 +570,22 @@ export const parser = (() => {
             let value = result[2].trim();
             let valueResult;
             
-            // TODO: Change to matches
-            valueResult = CONTEXT.exec(value);
+            valueResult = STRING.exec(value);
             if(valueResult != null) {
+                return createAction("set_string", result[1], value);
+            }
+
+            valueResult = NUMBER.exec(value);
+            if(valueResult != null) {
+                return createAction("set_number", result[1], parseFloat(value));
+            }
+
+            valueResult = BOOLEAN.exec(value);
+            if(valueResult != null) {
+                return createAction("set_boolean", result[1], toBoolean(value));
+            }
+            
+            if(CONTEXT.test(value)) {
                 let otherKey = null;
                 let table = extractTable(value);
                 if(table != null) {
@@ -590,21 +603,6 @@ export const parser = (() => {
                     };
                 }
                 return createAction("set_dynamic", result[1], otherKey)
-            }
-            
-            valueResult = STRING.exec(value);
-            if(valueResult != null) {
-                return createAction("set_string", result[1], value);
-            }
-            
-            valueResult = NUMBER.exec(value);
-            if(valueResult != null) {
-                return createAction("set_number", result[1], parseFloat(value));
-            }
-            
-            valueResult = BOOLEAN.exec(value);
-            if(valueResult != null) {
-                return createAction("set_boolean", result[1], toBoolean(value));
             }
             
             return null;
