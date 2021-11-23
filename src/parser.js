@@ -508,12 +508,12 @@ export const parser = (() => {
         
         result = INCREMENT.exec(tokenStr);
         if(result != null) {
-            return createAction("plus", result[1], 1);
+            return createAction("add", result[1], 1);
         }
 
         result = DECREMENT.exec(tokenStr);
         if(result != null) {
-            return createAction("plus", result[1], -1);
+            return createAction("add", result[1], -1);
         }
         
         result = SET_ADD.exec(tokenStr);
@@ -576,7 +576,7 @@ export const parser = (() => {
                 let otherKey = null;
                 let table = extractTable(value);
                 if(table != null) {
-                    field = value.substring(table.length + 1);
+                    let field = value.substring(table.length + 1);
                     validateField(table, "table");
                     validateField(field, "field");
                     otherKey = {
@@ -589,22 +589,22 @@ export const parser = (() => {
                         "field": value
                     };
                 }
-                return createAction("equal_dynamic", result[1], otherKey)
+                return createAction("set_dynamic", result[1], otherKey)
             }
             
             valueResult = STRING.exec(value);
             if(valueResult != null) {
-                return createAction("equal_string", result[1], value);
+                return createAction("set_string", result[1], value);
             }
             
             valueResult = NUMBER.exec(value);
             if(valueResult != null) {
-                return createAction("equal_number", result[1], parseFloat(value));
+                return createAction("set_number", result[1], parseFloat(value));
             }
             
             valueResult = BOOLEAN.exec(value);
             if(valueResult != null) {
-                return createAction("equal_boolean", result[1], toBoolean(value));
+                return createAction("set_boolean", result[1], toBoolean(value));
             }
             
             return null;
