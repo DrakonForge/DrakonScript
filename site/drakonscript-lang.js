@@ -38,7 +38,7 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       
       // DrakonScript
       "group": C,
-      "preset": C,
+      "preset": A,
       "list": C,
       "set": C,
       "remove": C,
@@ -48,7 +48,7 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       "predefined": C,
       "lines": C,
       "category": C,
-      "rule": kw("export"),
+      "rule": C,
       "fail": operator,
       "dummy": operator,
       "exists": C

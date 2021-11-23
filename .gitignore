@@ -1,6 +1,7 @@
 out/
 __pycache__
 scripts/
+compiled/
 *.lnk
 web_server.py
 launch_web_server.bat
