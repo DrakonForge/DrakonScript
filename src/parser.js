@@ -458,20 +458,18 @@ export const parser = (() => {
             obj["predefined_symbols"] = predefinedSymbols;
         }
 
-        if(lines == null) {
-            throw new SyntaxError("Speech lines were not defined for this block!");
-        }
-
-        // Check for slash delimiters
-        for(let i = 0; i < lines.length; ++i) {
-            if(typeof lines[i] === "string") {
-                if(lines[i].indexOf('/') > -1) {
-                    lines[i] = splitAndTrim(lines[i], '/');
+        if(lines != null) {
+            // Check for slash delimiters
+            for(let i = 0; i < lines.length; ++i) {
+                if(typeof lines[i] === "string") {
+                    if(lines[i].indexOf('/') > -1) {
+                        lines[i] = splitAndTrim(lines[i], '/');
+                    }
                 }
             }
+            validateSpeechLines(lines);
+            obj["line"] = lines;
         }
-        validateSpeechLines(lines);
-        obj["line"] = lines;
         
         if(actions.length > 0) {
             obj["actions"] = actions;
