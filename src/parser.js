@@ -56,7 +56,11 @@ export const parser = (() => {
         // x.y > x.z
         "greater_than_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
         // x.y >= x.z
-        "greater_equal_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/
+        "greater_equal_dynamic": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>=[ \t]*([a-zA-Z][a-zA-Z._\-0-9]*)$/,
+        // list includes "item"
+        "includes": /^([a-zA-Z][a-zA-Z._\-0-9]*) [ \t]*includes [ \t]*([.\S\s]+?)$/,
+        // list excludes "item"
+        "excludes": /^([a-zA-Z][a-zA-Z._\-0-9]*) [ \t]*excludes [ \t]*([.\S\s]+?)$/,
     };
 
     function extractTable(key) {
@@ -125,6 +129,17 @@ export const parser = (() => {
             throw new SyntaxError("Error: No possible value between " + min + " and " + max + ", this criterion will never be true");
         }
         return criterionWithKey(key, "range", [min, max], inverse);
+    }
+    
+    function getIntOrString(val) {
+        if(isInteger(val)) {
+            return parseInt(val);
+        }
+        const result = STRING.exec(val);
+        if(result != null) {
+            return result[1];
+        }
+        throw new SyntaxError("Expected integer or string!");
     }
     
     function handleDynamicCriterion(key1, key2, type, inverse) {
@@ -277,6 +292,10 @@ export const parser = (() => {
                 return handleDynamicCriterion(result[1], result[2], "greater_than_dynamic", inverse);
             case "greater_equal_dynamic":
                 return handleDynamicCriterion(result[1], result[2], "greater_equal_dynamic", inverse);
+            case "includes":
+                return criterionWithKey(result[1], "includes", getIntOrString(result[2]), inverse);
+            case "excludes":
+                return criterionWithKey(result[1], "includes", getIntOrString(result[2]), !inverse);
             default:
                 throw new SyntaxError("Unknown criterion type for \"" + str + "\"");
         }
@@ -572,7 +591,7 @@ export const parser = (() => {
             
             valueResult = STRING.exec(value);
             if(valueResult != null) {
-                return createAction("set_string", result[1], value);
+                return createAction("set_string", result[1], valueResult[1]);
             }
 
             valueResult = NUMBER.exec(value);

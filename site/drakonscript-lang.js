@@ -35,6 +35,8 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       "false": atom,
       "null": atom,
       "extends": C,
+      "includes": operator,
+      "excludes": operator,
       
       // DrakonScript
       "group": C,

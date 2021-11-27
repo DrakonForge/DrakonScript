@@ -403,8 +403,6 @@ function setFontSize(fontSize) {
     localStorage.setItem(FONT_SIZE_KEY, fontSize);
 }
 
-// TODO: Copy + download functions for both code windows
-
 const COMPRESSION_FORMAT = "Base64";
 const SAVE_KEY = "drakonscript-save";
 function save() {
@@ -488,6 +486,14 @@ function clearJSON() {
 function uploadDrakonScript() {
     logger.log("Waiting for the user to provide a file...");
     $(".file-input").trigger("click");
+}
+
+function minifyJSON() {
+    try {
+        jsonEditor.setValue(JSON.stringify(JSON.parse(jsonEditor.getValue())));
+    } catch(err) {
+        logger.error("Not valid JSON, failed to minify!");
+    }
 }
 
 function ensureDrakonScriptVisible() {
@@ -611,6 +617,10 @@ $(".button-copy-drkn").on("click", function () {
 
 $(".button-copy-json").on("click", function () {
     copyJSON();
+});
+
+$(".button-minify-json").on("click", function() {
+    minifyJSON();
 });
 
 $(window).bind("keydown", function (event) {
