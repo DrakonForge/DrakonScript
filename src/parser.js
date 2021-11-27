@@ -8,19 +8,16 @@ export const parser = (() => {
     // CRITERION //
 
     // Welcome to regex hell, enjoy your stay
+    const STRING = /^"(.*?)"$/;
+    const LIST = /^\[([.\S\s]*?)\]$/;
+    const NUMBER = /^([+-]?[0-9]*[.]?[0-9]+)$/; // use isInteger() for integers
+    const BOOLEAN = /^(true|false)$/;
+
     const CRITERION = {
-        // x.y = "string"
-        "equals_string": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*"(.*?)"$/,
-        // x.y = -3.0
-        "equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
-        // x.y = true
-        "equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*(true|false)$/,
-        // x.y != "string"
-        "not_equals_string": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*"(.*?)"$/,
-        // x.y != -3.0
-        "not_equals_number": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
-        // x.y != true
-        "not_equals_boolean": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*(true|false)$/,
+        // x.y = "string", x.y = -3.0, x.y = true
+        "equals": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*=[ \t]*([.\S\s]+?)$/,
+        // x.y != "string", x.y != -3.0, x.y != true
+        "not_equals": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*!=[ \t]*([.\S\s]+?)$/,
         // x.y > 3
         "greater_than": /^([a-zA-Z][a-zA-Z._\-0-9]*)[ \t]*>[ \t]*([+-]?[0-9]*[.]?[0-9]+)$/,
         // x.y >= 3
@@ -132,14 +129,40 @@ export const parser = (() => {
     }
     
     function getIntOrString(val) {
-        if(isInteger(val)) {
+        return getValue(val, false, false, true, true, false);
+    }
+    
+    function getValue(val, booleanAllowed = true, numberAllowed = true, intAllowed = true, stringAllowed = true, arrayAllowed = true) {
+        if(booleanAllowed && BOOLEAN.test(val)) {
+            return toBoolean(val);
+        }
+        if(numberAllowed && NUMBER.test(val)) {
+            return parseFloat(val);
+        }
+        if(intAllowed && isInteger(val)) {
             return parseInt(val);
         }
-        const result = STRING.exec(val);
-        if(result != null) {
+        let result = STRING.exec(val);
+        if(stringAllowed && result != null) {
             return result[1];
         }
-        throw new SyntaxError("Expected integer or string!");
+        result = LIST.exec(val);
+        if(arrayAllowed && result != null) {
+            return splitString(result[1]).map(function(value) {
+                return getValue(value);
+            });
+        }
+        throw new SyntaxError("Unexpected value \"" + val + "\"");
+    }
+    
+    function getPipeList(str) {
+        let list = str.split('|');
+        if(list.length > 1) {
+            return list.map(function(value) {
+                return getValue(value.trim(), true, true, true, true, false);
+            });
+        }
+        return null;
     }
     
     function handleDynamicCriterion(key1, key2, type, inverse) {
@@ -198,19 +221,18 @@ export const parser = (() => {
         let min, max, value;
 
         switch(type) {
-            case "equals_string":
-                return criterionWithKey(result[1], "equals", result[2], inverse);
-            case "equals_number":
-                value = parseFloat(result[2]);
+            case "equals":
+                value = getPipeList(result[2]);
+                if(value == null) {
+                    value = getValue(result[2]);
+                }
                 return criterionWithKey(result[1], "equals", value, inverse);
-            case "equals_boolean":
-                return criterionWithKey(result[1], "equals", toBoolean(result[2]), inverse);
-            case "not_equals_string":
-                return criterionWithKey(result[1], "equals", result[2], !inverse);
-            case "not_equals_number":
-                return criterionWithKey(result[1], "equals", parseFloat(result[2]), !inverse);
-            case "not_equals_boolean":
-                return criterionWithKey(result[1], "equals", toBoolean(result[2]), !inverse);
+            case "not_equals":
+                value = getPipeList(result[2]);
+                if(value == null) {
+                    value = getValue(result[2]);
+                }
+                return criterionWithKey(result[1], "equals", value, !inverse);
             case "greater_than":
                 value = parseFloat(result[2]);
                 if(isInteger(value)) {
@@ -306,7 +328,7 @@ export const parser = (() => {
     function parseCriteria(str) {
         str = str.trim();
         let criteria = [];
-        let tokenList = splitString(str);
+        let tokenList = splitString(str, true);
         for(let tokenStr of tokenList) {
             criteria.push(parseCriterion(tokenStr));
         }
@@ -508,8 +530,6 @@ export const parser = (() => {
     const INCREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\+\+$/;
     const DECREMENT = /^set [ \t]*([a-zA-Z][a-zA-Z0-9._]*)[ \t]*\-\-$/;
     const INVERT = /^invert [ \t]*([a-zA-Z][a-zA-Z0-9._]*)$/;
-    const NUMBER = /^([+-]?[0-9]*[.]?[0-9]+)$/;
-    const BOOLEAN = /^(true|false)$/;
     const CONTEXT = /^([a-zA-Z][a-zA-Z0-9._]*)$/;
     function handleActions(tokenStr) {
         let result;
@@ -718,10 +738,6 @@ export const parser = (() => {
         return result;
     }
 
-    // "string"
-    const STRING = /^"(.*?)"$/;
-    // [items...]
-    const LIST = /^\[([.\S\s]*?)\]$/;
     function parseListItem(str, allowInnerList) {
         str = str.trim();
         let result;
@@ -966,12 +982,7 @@ export const parser = (() => {
                     list.push(item);
                 }
                 item = "";
-            } else if(ch == '[') {
-                // Inner list
-                if(!allowList) {
-                    throw new SyntaxError("This list does not support inner lists!");
-                }
-
+            } else if(ch == '[' && allowList) {
                 // Only supports one level of inner list
                 item += '[';
                 ++i;
