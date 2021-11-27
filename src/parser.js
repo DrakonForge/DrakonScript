@@ -158,8 +158,16 @@ export const parser = (() => {
     function getPipeList(str) {
         let list = str.split('|');
         if(list.length > 1) {
+            list = list.map(function(value) {
+                return value.trim();
+            });
+            for(let i = list.length - 1; i >= 0; --i) {
+                if(list[i].length <= 0) {
+                    list.splice(i, 1);
+                }
+            }
             return list.map(function(value) {
-                return getValue(value.trim(), true, true, true, true, false);
+                return getValue(value, true, true, true, true, false);
             });
         }
         return null;
