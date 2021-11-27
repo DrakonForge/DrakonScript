@@ -482,7 +482,17 @@ export const parser = (() => {
                     throw new SyntaxError("Symbol \"" + symbolName + "\" is already defined in this block");
                 }
                 validateSymbol(symbolName);
-                symbols[symbolName] = value;
+                let table = extractTable(value);
+                if(table == null) {
+                    throw new SyntaxError("Symbol \"" + symbolName + "\" context key must define a table explicitly");
+                }
+                validateField(table, "table");
+                let field = value.substring(table.length + 1);
+                validateField(field, "field");
+                symbols[symbolName] = {
+                    "table": table,
+                    "field": field
+                };
                 continue;
             }
             
