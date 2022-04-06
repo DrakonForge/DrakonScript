@@ -10,7 +10,7 @@ export const logger = (() => {
     const COLOR_SUCCESS = "\x1b[32m";
 
     let warnings = true;
-    
+
     function error(str) {
         console.error(COLOR_ERROR + RESET, str);
     }
@@ -32,7 +32,7 @@ export const logger = (() => {
     function showWarnings(flag) {
         warnings = flag;
     }
-    
+
     return {
         error, warn, log, success, showWarnings
     };

@@ -1,0 +1,47 @@
+group fruit_vendor extends townsfolk {
+  @fruit = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
+  @name = #listener.name
+  category greeting {
+    rule () {
+      lines = [
+        "Hello! Would you like to buy some @fruit?"
+        "Hello there! I have @fruit for a lucky customer!"
+      ]
+    }
+    rule (is_friend=true, dummy 2) {
+      lines = [
+        "Hello, @name! Would you like some @fruit today?"
+        "How are you doing, @name! Care for some @fruit?"
+        "Always nice to talk to you, @name. Are you here to buy @fruit again?"
+      ]
+    }
+    rule (time="morning", fail 0.5) {
+      @topic = [ "weather", "tv show", "fireworks", "news", "stars", "moon" ]
+      lines = [
+        "Good morning, @name!"
+        [
+          "Hey, @name!"
+          "Did you see the @topic last night?"
+        ]
+      ]
+    }
+  }
+  
+  category farewell {
+    rule () {
+      lines = [
+        "Goodbye!"
+        "See you soon!"
+        "Farewell!"
+        "Until we meet again!"
+      ]
+    }
+    
+    rule (first_meeting=true) {
+      lines = [
+        "It was nice meeting you!"
+        "I hope I'll see you around!"
+      ]
+    }
+  }
+}

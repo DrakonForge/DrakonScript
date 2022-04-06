@@ -1,8 +1,4 @@
-out/
 __pycache__
-scripts/
-compiled/
+generated/
 *.lnk
-web_server.py
-launch_web_server.bat
-node_modules
+node_modules/

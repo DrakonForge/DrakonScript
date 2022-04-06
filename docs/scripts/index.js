@@ -1,5 +1,6 @@
 "use strict"
-import { parser } from "../src/parser.js"
+import { compileSpeechbank, setLogger } from "./compiler.js"
+import { parser } from "./drakonscript-parser.js"
 
 // LOGGER //
 let loggerEl = $("#console");
@@ -35,28 +36,29 @@ const TAB_SIZE = 2;
 const MIN_VISIBLE_PERC = 30;
 const SAMPLE_PROGRAM = `
 group fruit_vendor extends townsfolk {
-  list FRUIT = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
+  @fruit = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
+  @name = #listener.name
   category greeting {
     rule () {
       lines = [
-        "Hello! Would you like to buy some @FRUIT?"
-        "Hello there! I have @FRUIT for a lucky customer!"
+        "Hello! Would you like to buy some @fruit?"
+        "Hello there! I have @fruit for a lucky customer!"
       ]
     }
     rule (is_friend=true, dummy 2) {
       lines = [
-        "Hello, @NAME! Would you like some @FRUIT today?"
-        "How are you doing, @NAME! Care for some @FRUIT?"
-        "Always nice to talk to you, @NAME. Are you here to buy @FRUIT again?"
+        "Hello, @name! Would you like some @fruit today?"
+        "How are you doing, @name! Care for some @fruit?"
+        "Always nice to talk to you, @name. Are you here to buy @fruit again?"
       ]
     }
     rule (time="morning", fail 0.5) {
-      list TOPIC = [ "weather", "tv show", "fireworks", "news", "stars", "moon" ]
+      @topic = [ "weather", "tv show", "fireworks", "news", "stars", "moon" ]
       lines = [
-        "Good morning, @NAME!"
+        "Good morning, @name!"
         [
-          "Hey, @NAME!"
-          "Did you see the @TOPIC last night?"
+          "Hey, @name!"
+          "Did you see the @topic last night?"
         ]
       ]
     }
@@ -371,7 +373,7 @@ function compile() {
     let text = drknEditor.getValue();
     let result;
     try {
-        result = parser.parseSpeechbank(text);
+        result = compileSpeechbank(parser.parse(text));
     } catch(err) {
         logger.error("Failed to parse! " + err.name + ": " + err.message);
         ensureConsoleVisible();
@@ -679,7 +681,7 @@ setInterval(autosave, AUTOSAVE_INTERVAL);
 let editorSplit;
 let outputSplit;
 function init() {
-    parser.setLogger(logger);
+    setLogger(logger);
     loadSettings();
     editorSplit = createHorizontalSplit($(".editor-resizer"), [drknEditor, jsonEditor], 70);
     outputSplit = createVerticalSplit($(".output-resizer"), [jsonEditor], 70);
