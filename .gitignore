@@ -2,3 +2,4 @@ __pycache__
 generated/
 *.lnk
 node_modules/
+.DS_Store
