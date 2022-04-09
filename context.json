@@ -1,10 +1,12 @@
 {
     "speaker": {
-        "name": "Fred"
+        "name": "Fred",
+        "favorite_number": 9
     },
     
     "listener": {
-        "name": "Ted"    
+        "name": "Ted",
+        "known": false
     },
     
     "location": {
@@ -20,6 +22,6 @@
     },
     
     "world": {
-        
+        "weather": "clear"
     }
 }
