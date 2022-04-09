@@ -36,48 +36,87 @@ const TAB_SIZE = 2;
 const MIN_VISIBLE_PERC = 30;
 const SAMPLE_PROGRAM = `
 group fruit_vendor extends townsfolk {
-  @fruit = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
-  @name = #listener.name
-  category greeting {
-    rule () {
-      lines = [
-        "Hello! Would you like to buy some @fruit?"
-        "Hello there! I have @fruit for a lucky customer!"
-      ]
-    }
-    rule (is_friend=true, dummy 2) {
-      lines = [
-        "Hello, @name! Would you like some @fruit today?"
-        "How are you doing, @name! Care for some @fruit?"
-        "Always nice to talk to you, @name. Are you here to buy @fruit again?"
-      ]
-    }
-    rule (time="morning", fail 0.5) {
-      @topic = [ "weather", "tv show", "fireworks", "news", "stars", "moon" ]
-      lines = [
-        "Good morning, @name!"
-        [
-          "Hey, @name!"
-          "Did you see the @topic last night?"
-        ]
-      ]
-    }
-  }
+  @fruits = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes",
+             "cherries", "grapes", "tangerines" ]
   
-  category farewell {
-    rule () {
+  category interact {
+    rule (!listener.conversation exists, listener.known = false) {
+      set listener.conversation = 1
       lines = [
-        "Goodbye!"
-        "See you soon!"
-        "Farewell!"
-        "Until we meet again!"
+        "Hey! I haven't seen you around these parts."
+        "Who goes there? Your face isn't familiar..."
+        "What's your name, stranger?"
       ]
     }
     
-    rule (first_meeting=true) {
+    rule(!listener.conversation exists, listener.known = true) {
+      set listener.conversation = 2
       lines = [
-        "It was nice meeting you!"
-        "I hope I'll see you around!"
+        "Nice to see you again, @name!"
+      ]
+    }
+    
+    rule (listener.conversation = 1) {
+      set listener.conversation = 2
+      lines = [
+        "Ah, it's nice to meet you, @name! I'm #speaker.name."
+        "@name...What an interesting name! Mine's #speaker.name."
+      ]
+    }
+    
+    rule(listener.conversation = 2) {
+      set listener.conversation = 3
+      lines = [
+        "Welcome to my shop! As you can see, I sell fruit here."
+      ]
+    }
+    
+    rule(listener.conversation = 3) {
+      set listener.conversation = 4
+      lines = [
+        "@capitalize(@fruits), @fruits, @fruits, @fruits... you name it!"
+      ]
+    }
+    
+    rule(listener.conversation >= 4) {
+      set listener.conversation += 1
+      @topic = [ "weather", "news", "spaceship", "football game" ]
+      @num = #speaker.favorite_number
+      lines = [
+        "@capitalize(@fruits) and @fruits are in season, though @prev(1) are my favorite!"
+        "Did you see the @topic today? Crazy, right?"
+        "Could I interest you in some @fruits?"
+        "We must have talked at least @add(#listener.conversation, -1) times already..."
+        "My favorite number is @num. If you square it, you get @mult(@num, @num)!"
+      ]
+    }
+    
+    // weather -> world.weather
+    rule(listener.conversation >= 4, weather = "rain", fail 0.8) {
+      set listener.conversation += 1
+      lines = [
+        "My, the weather looks dreary today!"
+        "Better keep dry!"
+        "Best stay out of the rain today, @name!"
+      ]
+    }
+    
+    rule(listener.conversation >= 4, weather = "clear", fail 0.8) {
+      set listener.conversation += 1
+      lines = [
+        "Ah, lovely clear skies today!"
+        "What a nice breeze today!"
+      ]
+    }
+    
+    // Greater than 9 -> 10 or greater
+    rule(listener.conversation > 9, dummy 5) {
+      lines = [
+        "I think we've chatted quite long enough for now, @name!"
+        "I have to get back to work, @name!"
+        "I'll see you later, @name!"
+        "Goodbye, @name!"
+        "Time to go, @name!"
       ]
     }
   }
