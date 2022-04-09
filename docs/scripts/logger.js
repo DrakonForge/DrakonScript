@@ -6,7 +6,7 @@ export const logger = (() => {
     const RESET = "%s\x1b[0m";
     const COLOR_ERROR = "\x1b[31m";
     const COLOR_WARNING = "\x1b[33m";
-    const COLOR_LOG = "\x1b[34m";
+    const COLOR_LOG = "\x1b[36m";
     const COLOR_SUCCESS = "\x1b[32m";
 
     let warnings = true;
