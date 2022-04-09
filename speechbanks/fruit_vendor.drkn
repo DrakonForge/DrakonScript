@@ -1,4 +1,4 @@
-group fruit_vendor extends townsfolk {
+group fruit_vendor {
   @fruits = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes",
              "cherries", "grapes", "tangerines" ]
   

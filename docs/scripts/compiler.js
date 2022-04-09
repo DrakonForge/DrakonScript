@@ -36,6 +36,9 @@ export function compileSpeechbank(tree) {
     }
 
     const data = {};
+    if(tree.hasOwnProperty("parent")) {
+        data["parent"] = tree["parent"];
+    }
     if(symbols.length > 0) {
         data["symbols"] = symbols;
     }
