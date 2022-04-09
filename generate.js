@@ -113,7 +113,7 @@ function generateLines(options) {
         + options.category + " "
         + options.num_lines + " "
         + options.debug + " "
-        + options.no_output;
+        + !options.no_output;
 
     // Run java command
     execSync(cmd, { stdio: 'inherit' });
@@ -237,8 +237,8 @@ function main(args) {
     logger.log("\nConverting scripts...");
     convertScripts(options);
 
-    //logger.log("\nGenerating lines...");
-    //generateLines(options);
+    logger.log("\nGenerating lines...");
+    generateLines(options);
 
     const end = Date.now();
     logger.success("\nTotal execution time: " + (end - start) + "ms");

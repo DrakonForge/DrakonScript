@@ -13,7 +13,7 @@ const GENERATED_NAME = "drakonscript.js";
 let parser = null;
 
 function createParser() {
-    const grammar = fs.readFileSync(GRAMMAR_PATH, "utf8") + '\n';
+    const grammar = fs.readFileSync(GRAMMAR_PATH, "utf8");
     parser = new Parser(grammar);
     logger.log("Parser created");
 }
@@ -25,7 +25,7 @@ export function generateParserFile() {
     }
     const parserSource = parser.generate();
     if(!fs.existsSync(GENERATED_DIR)) {
-        fs.mkdirSync(GENERATED_DIR, { recursive: true });
+        fs.mkdirSync(GENERATED_DIR, { "recursive": true });
     }
     const generatedPath = path.join(GENERATED_DIR, GENERATED_NAME);
     fs.writeFileSync(generatedPath, parserSource);

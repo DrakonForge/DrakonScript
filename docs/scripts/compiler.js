@@ -69,7 +69,7 @@ function parseRule(ruleDef) {
     const criteriaDef = ruleDef["criteria"];
     
     if(ruleDef.hasOwnProperty("name")) {
-        data["label"] = ruleDef["name"];
+        data["name"] = ruleDef["name"];
     }
     
     if(criteriaDef.length > 0) {
@@ -96,7 +96,9 @@ function parseRule(ruleDef) {
     if(ruleDef.hasOwnProperty("defs")) {
         const defs = ruleDef["defs"];
         const lines = [];
+        const symbols = [];
         let hasLineDef = false;
+        let linesValue = null;
         
         for(const def of defs) {
             const type = def["type"];
@@ -105,16 +107,33 @@ function parseRule(ruleDef) {
                     throw new CompileError("Cannot have multiple lines definitions in a rule");
                 }
                 hasLineDef = true;
-                const linesDef = def["lines"];
-                for(const lineDef of linesDef) {
-                    const line = parseLine(lineDef);
-                    lines.push(line);
+                if(def.hasOwnProperty("preset")) {
+                    // Preset definition
+                    const presetDef = def["preset"];
+                    linesValue = extractContext(presetDef, {}, "category", "name");
+                } else {
+                    // Normal lines
+                    const linesDef = def["lines"];
+                    for(const lineDef of linesDef) {
+                        const line = parseLine(lineDef);
+                        lines.push(line);
+                    }
+
+                    if(lines.length > 0) {
+                        linesValue = lines;
+                    }
                 }
+            } else if(type == "symbol") {
+                const symbol = parseSymbol(def);
+                symbols.push(symbol);
             }
         }
         
-        if(lines.length > 0) {
-            data["lines"] = lines;
+        if(symbols.length > 0) {
+            data["symbols"] = symbols;
+        }
+        if(linesValue != null) {
+            data["lines"] = linesValue;
         }
     }
     

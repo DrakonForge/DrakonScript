@@ -186,6 +186,8 @@ RuleDefs
 RuleDef
     : 'lines' '=' '[' Lines ']'
         {$$ = {"type": "lines", "lines": $4};}
+    | 'lines' '=' TId
+        {$$ = {"type": "lines", "preset": $3};}
     /* Symbol */
     | Symbol '=' Exp
         {$$ = {"type": "symbol", "name": $1, "exp": $3};}

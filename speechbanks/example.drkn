@@ -1,6 +1,7 @@
 group fruit_vendor extends townsfolk {
   @fruit = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes" ]
   @name = #listener.name
+  
   category greeting {
     rule () {
       lines = [
@@ -8,14 +9,15 @@ group fruit_vendor extends townsfolk {
         "Hello there! I have @fruit for a lucky customer!"
       ]
     }
-    rule (is_friend=true, dummy 2) {
+    
+    rule (is_friend = true, dummy 2) {
       lines = [
         "Hello, @name! Would you like some @fruit today?"
         "How are you doing, @name! Care for some @fruit?"
         "Always nice to talk to you, @name. Are you here to buy @fruit again?"
       ]
     }
-    rule (time="morning", fail 0.5) {
+    rule (time = "morning", fail 0.5) {
       @topic = [ "weather", "tv show", "fireworks", "news", "stars", "moon" ]
       lines = [
         "Good morning, @name!"

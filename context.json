@@ -1,0 +1,25 @@
+{
+    "speaker": {
+        "name": "Fred"
+    },
+    
+    "listener": {
+        "name": "Ted"    
+    },
+    
+    "location": {
+        
+    },
+     
+    "structure": {
+        
+    },
+    
+    "region": {
+        
+    },
+    
+    "world": {
+        
+    }
+}
