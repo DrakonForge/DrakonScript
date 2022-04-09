@@ -390,12 +390,18 @@ function parseCriterion(criterionDef) {
 
     if(type == "includes") {
         const data = buildCriterion("includes", args[0]);
+        const value = args[1];
+        checkListTypes(value);
+        data["value"] = value;
         return data;
     }
 
     if(type == "excludes") {
-        const data = invertCriterion(buildCriterion("includes", args[0]));
-        return data;
+        const data = buildCriterion("includes", args[0]);
+        const value = args[1];
+        checkListTypes(value);
+        data["value"] = value;
+        return invertCriterion(data);
     }
 
     if(type == "dummy") {
