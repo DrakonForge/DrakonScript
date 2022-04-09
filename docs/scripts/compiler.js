@@ -34,7 +34,7 @@ export function compileSpeechbank(tree) {
             throw new CompileError("Unknown definition type '" + type + "' in group");
         }
     }
-    
+
     const data = {};
     if(symbols.length > 0) {
         data["symbols"] = symbols;
@@ -42,7 +42,7 @@ export function compileSpeechbank(tree) {
     if(Object.keys(speechbank).length > 0) {
         data["speechbank"] = speechbank;
     }
-    
+
     return [speechbankName, data];
 }
 
@@ -50,7 +50,7 @@ function parseCategory(categoryDef) {
     const defs = categoryDef["defs"];
     const categoryName = categoryDef["name"];
     const rules = [];
-    
+
     for(const def of defs) {
         const type = def["type"];
         if(type == "rule") {
@@ -60,18 +60,18 @@ function parseCategory(categoryDef) {
             throw new CompileError("Unknown definition type '" + type + "' in category");
         }
     }
-    
+
     return [categoryName, rules];
 }
 
 function parseRule(ruleDef) {
     const data = {};
     const criteriaDef = ruleDef["criteria"];
-    
+
     if(ruleDef.hasOwnProperty("name")) {
         data["name"] = ruleDef["name"];
     }
-    
+
     if(criteriaDef.length > 0) {
         const criteria = [];
         const presets = [];
@@ -83,23 +83,23 @@ function parseRule(ruleDef) {
                 presets.push(criterion);
             }
         }
-        
+
         if(presets.length > 0) {
             data["presets"] = presets;
         }
-        
+
         if(criteria.length > 0) {
             data["criteria"] = criteria;
         }
     }
-    
+
     if(ruleDef.hasOwnProperty("defs")) {
         const defs = ruleDef["defs"];
         const lines = [];
         const symbols = [];
         const actions = [];
         let linesValue = null;
-        
+
         for(const def of defs) {
             const type = def["type"];
             if(type == "lines") {
@@ -131,7 +131,7 @@ function parseRule(ruleDef) {
                 actions.push(def);
             }
         }
-        
+
         if(symbols.length > 0) {
             data["symbols"] = symbols;
         }
@@ -142,7 +142,7 @@ function parseRule(ruleDef) {
             data["lines"] = linesValue;
         }
     }
-    
+
     return data;
 }
 
@@ -152,7 +152,7 @@ function checkAction(action) {
     if(value == null) {
         delete action["value"];
     }
-    
+
     if(op == "set") {
         if(value == null) {
             throw new CompileError("Value must exist for set operation");
@@ -234,7 +234,7 @@ function parseSymbol(symbolDef) {
 function parseCriterion(criterionDef) {
     const type = criterionDef["type"];
     const args = criterionDef.hasOwnProperty("args") ? criterionDef["args"] : null;
-    
+
     if(type == "preset") {
         const arg = args[0];
         if(isContext(arg)) {
@@ -242,15 +242,15 @@ function parseCriterion(criterionDef) {
         }
         throw new CompileError("Invalid criterion, cannot be a lone value unless it is a preset");
     }
-    
+
     if(type == "eq") {
         return buildEqualsCriterion(args[0], args[1]);
     }
-    
+
     if(type == "neq") {
         return invertCriterion(buildEqualsCriterion(args[0], args[1]));
     }
-    
+
     if(type == "gt") {
         const context = args[0];
         const value = toNumber(args[1]);
@@ -269,7 +269,7 @@ function parseCriterion(criterionDef) {
         }
         return data;
     }
-    
+
     if(type == "lt") {
         const context = args[0];
         const value = toNumber(args[1]);
@@ -285,7 +285,7 @@ function parseCriterion(criterionDef) {
         }
         return data;
     }
-    
+
     if(type == "ge") {
         const context = args[0];
         const value = toNumber(args[1]);
@@ -296,7 +296,7 @@ function parseCriterion(criterionDef) {
         data["value"] = value;
         return data;
     }
-    
+
     if(type == "le") {
         const context = args[0];
         const value = toNumber(args[1]);
@@ -307,7 +307,7 @@ function parseCriterion(criterionDef) {
         data["value"] = value;
         return data;
     }
-    
+
     if(type == "le_le") {
         const context = args[1];
         const min = toNumber(args[0]);
@@ -316,11 +316,10 @@ function parseCriterion(criterionDef) {
             throw new CompileError("Middle argument must always be a context variable");
         }
         const data = buildCriterion("range", context);
-        data["min"] = min;
-        data["max"] = max;
+        data["value"] = [min, max];
         return data;
     }
-    
+
     if(type == "lt_le") {
         const context = args[1];
         const min = toNumber(args[0]);
@@ -329,16 +328,15 @@ function parseCriterion(criterionDef) {
             throw new CompileError("Middle argument must always be a context variable");
         }
         const data = buildCriterion("range", context);
-        data["min"] = min;
+        data["value"] = [min, max];
         if(isInteger(min)) {
-            data["min"] += 1;
+            data["value"][0] += 1;
         } else {
             logger.warn("< is equivalent to <= when applied to floats, use >= instead");
         }
-        data["max"] = max;
         return data;
     }
-    
+
     if(type == "le_lt") {
         const context = args[1];
         const min = toNumber(args[0]);
@@ -347,16 +345,15 @@ function parseCriterion(criterionDef) {
             throw new CompileError("Middle argument must always be a context variable");
         }
         const data = buildCriterion("range", context);
-        data["min"] = min;
-        data["max"] = max;
+        data["value"] = [min, max];
         if(isInteger(max)) {
-            data["max"] -= 1;
+            data["value"][1] -= 1;
         } else {
             logger.warn("< is equivalent to <= when applied to floats, use >= instead");
         }
         return data;
     }
-    
+
     if(type == "lt_lt") {
         const context = args[1];
         const min = toNumber(args[0]);
@@ -365,43 +362,42 @@ function parseCriterion(criterionDef) {
             throw new CompileError("Middle argument must always be a context variable");
         }
         const data = buildCriterion("range", context);
-        data["min"] = min;
+        data["value"] = [min, max];
         if(isInteger(min)) {
-            data["min"] += 1;
+            data["value"][0] += 1;
         } else {
             logger.warn("< is equivalent to <= when applied to floats, use >= instead");
         }
-        data["max"] = max;
         if(isInteger(max)) {
-            data["max"] += 1;
+            data["value"][1] -= 1;
         } else {
             logger.warn("< is equivalent to <= when applied to floats, use >= instead");
         }
         return data;
     }
-    
+
     if(type == "exists") {
         return buildCriterion("exists", args[0]);
     }
-    
+
     if(type == "empty") {
         return buildCriterion("empty", args[0]);
     }
-    
+
     if(type == "nonempty") {
         return invertCriterion(buildCriterion("empty", args[0]));
     }
-    
+
     if(type == "includes") {
         const data = buildCriterion("includes", args[0]);
         return data;
     }
-    
+
     if(type == "excludes") {
         const data = invertCriterion(buildCriterion("includes", args[0]));
         return data;
     }
-    
+
     if(type == "dummy") {
         const value = Number(args[0]);
         if(!isInteger(value)) {
@@ -415,7 +411,7 @@ function parseCriterion(criterionDef) {
             "value": value
         };
     }
-    
+
     if(type == "fail") {
         const value = Number(args[0]);
         if(value >= 1) {
@@ -428,7 +424,7 @@ function parseCriterion(criterionDef) {
             "value": value
         };
     }
-    
+
     if(type == "negate") {
         const criterion = parseCriterion(args[0]);
         if(!criterion.hasOwnProperty("type")) {
@@ -439,7 +435,7 @@ function parseCriterion(criterionDef) {
         }
         return invertCriterion(criterion);
     }
-    
+
     throw new CompileError("Unknown criterion type '" + type + "'");
 }
 
@@ -449,7 +445,7 @@ function buildEqualsCriterion(context, value) {
     }
 
     const data = buildCriterion("equals", context);
-    
+
     if(isContext(value)) {
         data["type"] = "equals_dynamic";
         extractContext(value, data, "other_table", "other_field", data);
@@ -463,7 +459,6 @@ function buildEqualsCriterion(context, value) {
             }
             if(value.length > 1) {
                 checkListTypes(value);
-                data["type"] = "alternate";
             } else {
                 value = value[0];
             }
