@@ -111,7 +111,7 @@ function generateLines(options) {
         + options.context + " "
         + options.group + " "
         + options.category + " "
-        + options.num_lines + " "
+        + options.count + " "
         + options.debug + " "
         + !options.no_output;
 
@@ -128,12 +128,12 @@ function parseArgs(args) {
         "output_folder": join("generated", "compiled"),
         "context": "context.json",
         "group": "fruit_vendor",
-        "category": "greeting",
+        "category": "interact",
         "debug": false,
         "no_output": false,
         "generate": false,
         "minify": false,
-        "num_lines": 10
+        "count": 10
     };
 
     const flags = args.slice(2);
@@ -178,14 +178,14 @@ function parseArgs(args) {
             } else {
                 options["category"] = value;
             }
-        } else if(flag == "--numlines") {
+        } else if(flag == "--count") {
             if(value == null) {
-                logger.error("NumLines option must specify number! \"--numlines=<number>\"");
+                logger.error("Count option must specify number! \"--count=<number>\"");
             } else {
-                options["num_lines"] = parseInt(value);
-                if(options["num_lines"] < 1) {
+                options["count"] = parseInt(value);
+                if(options["count"] < 1) {
                     logger.error("Number of lines must be at least 1!");
-                    options["num_lines"] = 1;
+                    options["count"] = 1;
                 }
             }
         } else if(flag == "--debug") {

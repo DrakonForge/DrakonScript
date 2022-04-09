@@ -202,8 +202,6 @@ RuleDef
         {$$ = {"type": "action", "op": "mult", "context": $2, "value": $4 };}
     | 'set' TId '/=' Val
         {$$ = {"type": "action", "op": "div", "context": $2, "value": $4 };}
-    | 'set' TId '%=' Val
-        {$$ = {"type": "action", "op": "mod", "context": $2, "value": $4 };}
     | 'set' '++' TId
         {$$ = {"type": "action", "op": "add", "context": $3, "value": 1 };}
     | 'set' '--' TId

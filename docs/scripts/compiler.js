@@ -97,16 +97,15 @@ function parseRule(ruleDef) {
         const defs = ruleDef["defs"];
         const lines = [];
         const symbols = [];
-        let hasLineDef = false;
+        const actions = [];
         let linesValue = null;
         
         for(const def of defs) {
             const type = def["type"];
             if(type == "lines") {
-                if(hasLineDef) {
+                if(linesValue != null) {
                     throw new CompileError("Cannot have multiple lines definitions in a rule");
                 }
-                hasLineDef = true;
                 if(def.hasOwnProperty("preset")) {
                     // Preset definition
                     const presetDef = def["preset"];
@@ -126,11 +125,18 @@ function parseRule(ruleDef) {
             } else if(type == "symbol") {
                 const symbol = parseSymbol(def);
                 symbols.push(symbol);
+            } else if(type == "action") {
+                delete def["type"];
+                checkAction(def);
+                actions.push(def);
             }
         }
         
         if(symbols.length > 0) {
             data["symbols"] = symbols;
+        }
+        if(actions.length > 0) {
+            data["actions"] = actions;
         }
         if(linesValue != null) {
             data["lines"] = linesValue;
@@ -138,6 +144,72 @@ function parseRule(ruleDef) {
     }
     
     return data;
+}
+
+function checkAction(action) {
+    const op = action["op"];
+    const value = action.hasOwnProperty("value") ? action["value"] : null;
+    if(value == null) {
+        delete action["value"];
+    }
+    
+    if(op == "set") {
+        if(value == null) {
+            throw new CompileError("Value must exist for set operation");
+        }
+        if(isContext(value)) {
+            action["op"] = "set_dynamic";
+        } else {
+            if(Array.isArray(value)) {
+                checkListTypes(value);
+                action["op"] = "set_list";
+            } else {
+                action["op"] = "set_static";
+            }
+        }
+    } else if(op == "add") {
+        if(value == null) {
+            throw new CompileError("Value must exist for add operation");
+        }
+        if(typeof value !== "number") {
+            throw new CompileError("Value must be a number for add operation");
+        }
+    } else if(op == "sub") {
+        if(value == null) {
+            throw new CompileError("Value must exist for sub operation");
+        }
+        if(typeof value !== "number") {
+            throw new CompileError("Value must be a number for sub operation");
+        }
+        action["op"] = "add";
+        action["value"] = -value;
+    } else if(op == "mult") {
+        if(value == null) {
+            throw new CompileError("Value must exist for mult operation");
+        }
+        if(typeof value !== "number") {
+            throw new CompileError("Value must be a number for mult operation");
+        }
+    } else if(op == "div") {
+        if(value == null) {
+            throw new CompileError("Value must exist for div operation");
+        }
+        if(typeof value !== "number") {
+            throw new CompileError("Value must be a number for div operation");
+        }
+        action["op"] = "mult";
+        action["value"] = 1.0 / value;
+    } else if(op == "remove") {
+        if(value != null) {
+            throw new CompileError("Value should not exist for set operation");
+        }
+    } else if(op == "invert") {
+        if(value != null) {
+            throw new CompileError("Value should not exist for set operation");
+        }
+    } else {
+        throw new CompileError("Invalid operation \"" + op + "\"");
+    }
 }
 
 function parseLine(lineDef) {
@@ -390,6 +462,7 @@ function buildEqualsCriterion(context, value) {
                 throw new CompileError("Must specify at least one value");
             }
             if(value.length > 1) {
+                checkListTypes(value);
                 data["type"] = "alternate";
             } else {
                 value = value[0];
@@ -399,6 +472,14 @@ function buildEqualsCriterion(context, value) {
         data["value"] = value;
     }
     return data;
+}
+
+function checkListTypes(arr) {
+    for(let el of arr) {
+        if(!isInteger(el) && typeof el !== "string") {
+            throw new CompileError("Lists should contain only strings and integers");
+        }
+    }
 }
 
 function buildCriterion(type, context) {
