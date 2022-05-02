@@ -1,6 +1,14 @@
 /* lexical grammar */
 %lex
 
+/* Escapes with the help of https://github.com/czurnieden/Little/blob/master/grammar/Little-lexer-and-grammar.jison */
+
+escapechar [\"\\bfnrtv]
+escape \\{escapechar}
+acceptedchars [^\"\\]+
+stringcontents {escape}|{acceptedchars}
+stringliteral \"{stringcontents}*\"
+
 %%
 /* Ignored */
 "//"([^\r^\n])*                 /* skip single-line comments */
@@ -28,12 +36,12 @@
 "false"         return 'false';
 
 /* Tokens */
-[a-z][a-zA-Z_0-9]*                                  return 'Id';
-"@"[a-z][a-zA-Z_0-9]*     yytext = yytext.slice(1); return 'Symbol';
+[a-zA-Z][a-zA-Z_0-9]*                               return 'Id';
+"@"[a-zA-Z][a-zA-Z_0-9]*  yytext = yytext.slice(1); return 'Symbol';
 "#"[a-z][a-zA-Z_.0-9]*    yytext = yytext.slice(1); return 'Context';
 ("-")?(0|[1-9][0-9]*)"."[0-9]+                      return 'Float';
 ("-")?(0|[1-9][0-9]*)                               return 'Integer'
-\"[^"]+\"              yytext = yytext.slice(1,-1); return 'String'
+{stringliteral}              yytext = yytext.slice(1,-1).replace(/\\/g,""); return 'String'
 <<EOF>>                                             return 'EOF';
 
 /* Operations */

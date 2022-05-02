@@ -41,24 +41,21 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
       // DrakonScript
       "group": C,
       "preset": A,
-      "list": C,
       "set": C,
       "remove": C,
       "invert": C,
-      "trigger": C,
-      "symbol": C,
-      "predefined": C,
       "lines": C,
       "category": C,
       "rule": C,
       "fail": operator,
       "dummy": operator,
-      "exists": C
+      "exists": C,
+      "empty": C,
+      "nonempty": C
     };
   }();
 
   var isOperatorChar = /[+\-*&%=<>!?|~^@]/;
-  var isJsonldKeyword = /^@(context|id|value|language|type|container|list|set|reverse|index|base|vocab|graph)"/;
 
   function readRegexp(stream) {
     var escaped = false, next, inSet = false;
@@ -153,7 +150,7 @@ CodeMirror.defineMode("drakonscript", function(config, parserConfig) {
   function tokenString(quote) {
     return function(stream, state) {
       var escaped = false, next;
-      if (jsonldMode && stream.peek() == "@" && stream.match(isJsonldKeyword)){
+      if (jsonldMode && stream.peek() == "@"){
         state.tokenize = tokenBase;
         return ret("jsonld-keyword", "meta");
       }
