@@ -16,8 +16,11 @@
 Unlike scripting languages in visual novel engines such as [RenPy](https://www.renpy.org/) or [Twine](https://twinery.org/), which are designed for choice-based narratives, DrakonScript is designed for writing **dialogue barks**: one-line callouts or exclamations that non-player characters (NPCs) might say in games such as *Assassin's Creed*, *The Last of Us*, and other open-world/adventure titles. Instead of a scripted conversation, barks are generally triggered by an **in-game event** and are ideally tailored to the current situation (or **context**) in order to make the NPC's reaction feel realistic. For example:
 
 > *"She's over there, behind the car!"* — When an enemy spots the player in their hiding place.
+> 
 > *"That's not looking too good, brother!"* — When the player takes damage at low health.
+> 
 > *"Huh? Is someone there?"* — When a guard is alerted to some strange disturbance, of course followed by:
+> 
 > *"Must have been the wind."* — When the guard gives up their search.
 
 These dialogue barks are used to communicate both the NPC's intention and personality to the player. There are some excellent resources to learn more about writing dialogue barks [here](https://sarah-beaulieu.com/en/writing-barks-for-video-games) and [here](https://indiegamewriting.com/writing-2-world-building-with-barks/).
