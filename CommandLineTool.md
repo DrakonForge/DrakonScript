@@ -1,6 +1,6 @@
 # DrakonScript Command Line Tool
 
-The command line tool is used to compile and test the generation of speech lines. It uses my [Contextual Dialogue (link pending)]() system to read the JSON output and generate speech lines. 
+The command line tool is used to compile and test the generation of speech lines. It uses my [Contextual Dialogue](https://github.com/DrakonForge/ContextualDialogue) system to read the JSON output and generate speech lines.
 
 The following guide is written for Windows users, though other platforms should have similar steps.
 
@@ -8,8 +8,8 @@ The following guide is written for Windows users, though other platforms should 
 
 To use this tool, the following installations are needed:
 
-* [Java (link pending)]() 16 or newer
-* [Node.js (link pending)]() v16.13.0 or newer
+* [Java](https://www.oracle.com/java/technologies/downloads/) 16 or newer
+* [Node.js](https://nodejs.org/en/download/) v16.13.0 or newer
 
 You can run `java --version` and `node --version` in your command line to check the respective existence and versions of these installations.
 
