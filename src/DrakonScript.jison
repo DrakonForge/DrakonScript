@@ -222,6 +222,9 @@ RuleDef
         {$$ = {"type": "action", "op": "remove", "context": $2 };}
     | 'invert' TId
         {$$ = {"type": "action", "op": "invert", "context": $2 };}
+    /* Triggers */
+    | 'trigger' TId '(' ExpsOrEmpty ')'
+        {$$ = {"type": "trigger", "name": $2, "args": $};}
     ;
 
 Lines

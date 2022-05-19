@@ -129,9 +129,13 @@ function parseRule(ruleDef) {
                 const symbol = parseSymbol(def);
                 symbols.push(symbol);
             } else if(type == "action") {
+                // Context action
                 delete def["type"];
                 checkAction(def);
                 actions.push(def);
+            } else if(type == "trigger") {
+                // TODO: Event Triggers, type of non-context action
+                // Nothing for now
             }
         }
 
