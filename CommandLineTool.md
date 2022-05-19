@@ -37,3 +37,4 @@ The following optional arguments are available to produce different results. You
 | --noprint | **Skips** printing the generated speech lines, which may be useful when `count` is a large number. | `false`
 | --generate | Generates the **JavaScript parser file** from the Jison grammar, which may be useful to export to other programs. | `false`
 | --minify | Generates **minified** JSON instead of formatted JSON, which reduces file size (but also readability) without changing the interpreter's behavior. | `false`
+| --tokenize | Displays the speech result tokens, which display hidden formatting (normally displays only plaintext). | `false`
