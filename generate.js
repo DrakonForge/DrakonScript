@@ -113,7 +113,10 @@ function generateLines(options) {
         + options.category + " "
         + options.count + " "
         + options.debug + " "
-        + !options.no_output;
+        + !options.no_output + " "
+        + options.tokenize + " "
+        + options.priority + " "
+        + options.stats;
 
     // Run java command
     execSync(cmd, { stdio: 'inherit' });
@@ -127,12 +130,15 @@ function parseArgs(args) {
         "input_folder": "speechbanks",
         "output_folder": join("generated", "compiled"),
         "context": "context.json",
-        "group": "fruit_vendor",
-        "category": "interact",
+        "group": "FruitVendor",
+        "category": "Interact",
         "debug": false,
         "no_output": false,
         "generate": false,
         "minify": false,
+        "priority": false,
+        "stats": false,
+        "tokenize": false,
         "count": 10
     };
 
@@ -196,6 +202,12 @@ function parseArgs(args) {
             options["generate"] = true;
         } else if(flag == "--minify") {
             options["minify"] = true;
+        } else if(flag == "--stats") {
+            options["stats"] = true;
+        } else if(flag == "--priority") {
+            options["priority"] = true;
+        } else if(flag == "--tokenize") {
+            options["tokenize"] = true;
         } else if(flag.startsWith("--")) {
             logger.error("Unrecognized flag \"" + flag + "\"!");
             continue;

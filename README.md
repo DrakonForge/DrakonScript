@@ -1,6 +1,7 @@
 # DrakonScript: A Scripting Language for Contextual Dialogue
 
 > **Table of Contents**
+
 > * [Inspiration](#inspiration)
 > * [Core Concepts](#core-concepts)
 > * [Syntax](#syntax)
@@ -161,7 +162,7 @@ All criterion, with the exception of **dummy** and **fail** criterion, can be in
 The speech lines or **responses** for a rule can be defined using the `lines = ...` statement. This is generally done by setting the line equal to an array, like so:
 
 ```js
-lines = [
+response {
   "Line 1"
   "Line 2"
   "Line 3"
@@ -169,7 +170,7 @@ lines = [
     "Multi-line 1"
     "Multi-line 2"
   ]
-]
+}
 ```
 
 Commas between speech lines are not necessary. In addition, an **inner array** can be used to define a response containing multiple lines. This compiles to a single line with the individual lines join together with `/` characters, which can be used by your dialogue backend to separate lines. The above example's multi-line response would compile to `"Multi-line 1/Multi-line 2"`.
@@ -178,11 +179,11 @@ Commas between speech lines are not necessary. In addition, an **inner array** c
 
 **Symbols** are aliases for various expressions, such as a list, number, or function. They are written in the form `@symbol_name = <exp>`, and can be defined on the **group level** (alongside `category` statements) or on the **rule level** (alongside `lines` and other statements).
 
-Symbols are useful for creating a shorthand for various expressions. For example, defining a symbol for a list `@my_list = [ "item 1", "item 2", "item 3" ]` means that instead of writing the entire list again, you can instead reference it with `@my_list`. Symbols are meant to be **immutable**, which means attempting to define a symbol more than one may lead to errors depending on your dialogue system implementation.
+Symbols are useful for creating a shorthand for various expressions. For example, defining a symbol for a list `@MyList = [ "item 1", "item 2", "item 3" ]` means that instead of writing the entire list again, you can instead reference it with `@MyList`. Symbols are meant to be **immutable**, which means attempting to define a symbol more than one may lead to errors depending on your dialogue system implementation.
 
 ### Functions
 
-DrakonScript supports the use of pre-defined **functions**, which perform an operation on its arguments and return a single result. using the following syntax: `@function_name(arg1, arg2, arg3)`. These are differentiated from symbols by the use of parentheses at the end. Functions are valid expressions in symbol statements and can also be chained together, e.g. `@result = @f(@g(x), y)`.
+DrakonScript supports the use of pre-defined **functions**, which perform an operation on its arguments and return a single result. using the following syntax: `@functionName(arg1, arg2, arg3)`. These are differentiated from symbols by the use of parentheses at the end. Functions are valid expressions in symbol statements and can also be chained together, e.g. `@Result = @f(@g(X), Y)`.
 
 Functions are defined entirely by the **dialogue system** backend—while DrakonScript allows the syntax for them, there are no pre-defined functions solely within DrakonScript and **new functions cannot be defined in DrakonScript**.
 
@@ -190,10 +191,10 @@ Functions are defined entirely by the **dialogue system** backend—while Drakon
 
 DrakonScript supports mutable **context**, providing statements to manipulate context directly from rules. Context keys can be modified in the following ways:
 
-* `set x.y = <value>`: Set context key `x.y` equal to the given value. Note that only certain values for context are supported. This can also be used to set one context key to the value of another, such as `set x.y = x.z`.
-* `set x.y += <number>`: Add the given number to context key `x.y`. Also works for `-=`, `*=`, `/=`, and `%=` for subtraction, multiplication, division, and modulo, respectively.
-* `remove x.y`: Removes context key `x.y` from the current context.
-* `invert x.y`: Only works if context key `x.y` is a boolean. Inverts the boolean, so `false` becomes `true` and vice versa.
+* `set X.Y = <value>`: Set context key `X.Y` equal to the given value. Note that only certain values for context are supported. This can also be used to set one context key to the value of another, such as `set X.Y = X.Z`.
+* `set X.Y += <number>`: Add the given number to context key `X.Y`. Also works for `-=`, `*=`, `/=`, and `%=` for subtraction, multiplication, division, and modulo, respectively.
+* `remove X.Y`: Removes context key `X.Y` from the current context.
+* `invert X.Y`: Only works if context key `X.Y` is a boolean. Inverts the boolean, so `false` becomes `true` and vice versa.
 
 ### Other Syntax
 
@@ -243,7 +244,7 @@ You can write DrakonScript on the left window. Then, you can press **Compile** t
 ## Using the Command Line Tool
 
 The guide on how to use the command line tool can be found **[here](https://github.com/DrakonForge/DrakonScript/blob/main/CommandLineTool.md)**.
- 
+
 ## Extending this System
 
 ### Writing Speech Lines

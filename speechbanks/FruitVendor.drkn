@@ -1,86 +1,86 @@
-group fruit_vendor {
+group FruitVendor {
   @fruits = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes",
              "cherries", "grapes", "tangerines" ]
   
-  category interact {
-    rule (!listener.conversation exists, listener.known = false) {
-      set listener.conversation = 1
-      lines = [
+  category Interact {
+    rule (!Listener.Conversation exists, Listener.Known = false) {
+      set Listener.Conversation = 1
+      response {
         "Hey! I haven't seen you around these parts."
         "Who goes there? Your face isn't familiar..."
         "What's your name, stranger?"
-      ]
+      }
     }
     
-    rule(!listener.conversation exists, listener.known = true) {
-      set listener.conversation = 2
-      lines = [
+    rule(!Listener.Conversation exists, Listener.Known = true) {
+      set Listener.Conversation = 2
+      response {
         "Nice to see you again, @name!"
-      ]
+      }
     }
     
-    rule (listener.conversation = 1) {
-      set listener.conversation = 2
-      lines = [
-        "Ah, it's nice to meet you, @name! I'm #speaker.name."
-        "@name...What an interesting name! Mine's #speaker.name."
-      ]
+    rule (Listener.Conversation = 1) {
+      set Listener.Conversation = 2
+      response {
+        "Ah, it's nice to meet you, @name! I'm @self."
+        "@name...What an interesting name! Mine's @self."
+      }
     }
     
-    rule(listener.conversation = 2) {
-      set listener.conversation = 3
-      lines = [
+    rule(Listener.Conversation = 2) {
+      set Listener.Conversation = 3
+      response {
         "Welcome to my shop! As you can see, I sell fruit here."
-      ]
+      }
     }
     
-    rule(listener.conversation = 3) {
-      set listener.conversation = 4
-      lines = [
+    rule(Listener.Conversation = 3) {
+      set Listener.Conversation = 4
+      response {
         "@capitalize(@fruits), @fruits, @fruits, @fruits... you name it!"
-      ]
+      }
     }
     
-    rule(listener.conversation >= 4) {
-      set listener.conversation += 1
+    rule(Listener.Conversation >= 4) {
+      set Listener.Conversation += 1
       @topic = [ "weather", "news", "spaceship", "football game" ]
-      @num = #speaker.favorite_number
-      lines = [
+      @num = #Speaker.FavoriteNumber
+      response {
         "@capitalize(@fruits) and @fruits are in season, though @prev(1) are my favorite!"
         "Did you see the @topic today? Crazy, right?"
         "Could I interest you in some @fruits?"
-        "We must have talked at least @add(#listener.conversation, -1) times already..."
+        "We must have talked at least @add(#Listener.Conversation, -1) times already..."
         "My favorite number is @num. If you square it, you get @mult(@num, @num)!"
-      ]
+      }
     }
     
     // weather -> world.weather
-    rule(listener.conversation >= 4, weather = "rain", fail 0.8) {
-      set listener.conversation += 1
-      lines = [
+    rule(Listener.Conversation >= 4, Weather = "rain", fail 0.8) {
+      set Listener.Conversation += 1
+      response {
         "My, the weather looks dreary today!"
         "Better keep dry!"
         "Best stay out of the rain today, @name!"
-      ]
+      }
     }
     
-    rule(listener.conversation >= 4, weather = "clear", fail 0.8) {
-      set listener.conversation += 1
-      lines = [
+    rule(Listener.Conversation >= 4, Weather = "clear", fail 0.8) {
+      set Listener.Conversation += 1
+      response {
         "Ah, lovely clear skies today!"
         "What a nice breeze today!"
-      ]
+      }
     }
     
     // Greater than 9 -> 10 or greater
-    rule(listener.conversation > 9, dummy 5) {
-      lines = [
+    rule(Listener.Conversation > 9, dummy 5) {
+      response {
         "I think we've chatted quite long enough for now, @name!"
         "I have to get back to work, @name!"
         "I'll see you later, @name!"
         "Goodbye, @name!"
         "Time to go, @name!"
-      ]
+      }
     }
   }
 }

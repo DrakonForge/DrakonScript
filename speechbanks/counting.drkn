@@ -1,17 +1,17 @@
-group counting {
-  category interact {
-    rule(!speaker.count exists) {
-      set speaker.count = 0
-      lines = [
+group Counting {
+  category Interact {
+    rule(!Speaker.Count exists) {
+      set Speaker.Count = 0
+      response {
         "Count with me, @name! Here we go:"
-      ]
+      }
     }
     
-    rule(speaker.count exists) {
-      set speaker.count += 1
-      lines = [
-        "@capitalize(#speaker.count)..."
-      ]
+    rule(Speaker.Count exists) {
+      set Speaker.Count += 1
+      response {
+        "@capitalize(#Speaker.Count)..."
+      }
     }
   }
 }

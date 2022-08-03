@@ -3,3 +3,4 @@ generated/
 *.lnk
 node_modules/
 .DS_Store
+META-INF/

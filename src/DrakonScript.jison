@@ -21,7 +21,7 @@ stringliteral \"{stringcontents}*\"
 "extends"       return 'extends';
 "category"      return 'category';
 "rule"          return 'rule';
-"lines"         return 'lines';
+"response"      return 'response';
 "set"           return 'set';
 "remove"        return 'remove';
 "insert"        return 'insert';
@@ -38,7 +38,7 @@ stringliteral \"{stringcontents}*\"
 /* Tokens */
 [a-zA-Z][a-zA-Z_0-9]*                               return 'Id';
 "@"[a-zA-Z][a-zA-Z_0-9]*  yytext = yytext.slice(1); return 'Symbol';
-"#"[a-z][a-zA-Z_.0-9]*    yytext = yytext.slice(1); return 'Context';
+"#"[a-zA-Z][a-zA-Z_.0-9]*    yytext = yytext.slice(1); return 'Context';
 ("-")?(0|[1-9][0-9]*)"."[0-9]+                      return 'Float';
 ("-")?(0|[1-9][0-9]*)                               return 'Integer'
 {stringliteral}              yytext = yytext.slice(1,-1).replace(/\\/g,""); return 'String'
@@ -93,7 +93,7 @@ Group
     | 'group' Id 'extends' Id '{' GroupDefs '}'
         {$$ = {"id": $2, "parent": $4, "defs": $6};}
     | 'preset' '{' GroupDefs '}'
-        {$$ = {"id": "preset", "defs": $3};}
+        {$$ = {"id": "Preset", "defs": $3};}
     ;
 
 GroupDefs
@@ -192,10 +192,10 @@ RuleDefs
     ;
 
 RuleDef
-    : 'lines' '=' '[' Lines ']'
-        {$$ = {"type": "lines", "lines": $4};}
-    | 'lines' '=' TId
-        {$$ = {"type": "lines", "preset": $3};}
+    : 'response' '{' Responses '}'
+        {$$ = {"type": "response", "value": $3};}
+    | 'response' TId
+        {$$ = {"type": "response", "preset": $2};}
     /* Symbol */
     | Symbol '=' Exp
         {$$ = {"type": "symbol", "name": $1, "exp": $3};}
@@ -227,31 +227,31 @@ RuleDef
         {$$ = {"type": "trigger", "name": $2, "args": $};}
     ;
 
-Lines
+Responses
     : /* Empty */
         {$$ = [];}
-    | Lines Line
+    | Responses Response
         {$1.push($2); $$ = $1;}
     ;
 
-Line1
+Response1
     : String
         {$$ = $1;}
-    | Line1 ','
+    | Response1 ','
         {$$ = $1;}
     ;
 
-Line1s
+Response1s
     : /* Empty */
         {$$ = [];}
-    | Line1s Line1
+    | Response1s Response1
         {$1.push($2); $$ = $1;}
     ;
 
-Line
-    : Line1
+Response
+    : Response1
         {$$ = $1;}
-    | '[' Line1s ']'
+    | '[' Response1s ']'
         {$$ = $2;}
     ;
 

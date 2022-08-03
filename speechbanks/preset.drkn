@@ -1,3 +1,4 @@
 preset {
-    @name = #listener.name
+    @name = #Listener.Name
+    @self = #Speaker.Name
 }

@@ -98,31 +98,31 @@ function parseRule(ruleDef) {
 
     if(ruleDef.hasOwnProperty("defs")) {
         const defs = ruleDef["defs"];
-        const lines = [];
+        const responses = [];
         const symbols = [];
         const actions = [];
-        let linesValue = null;
+        let responseValue = null;
 
         for(const def of defs) {
             const type = def["type"];
-            if(type == "lines") {
-                if(linesValue != null) {
+            if(type == "response") {
+                if(responseValue != null) {
                     throw new CompileError("Cannot have multiple lines definitions in a rule");
                 }
                 if(def.hasOwnProperty("preset")) {
                     // Preset definition
                     const presetDef = def["preset"];
-                    linesValue = extractContext(presetDef, {}, "category", "name");
+                    responseValue = extractContext(presetDef, {}, "category", "name");
                 } else {
                     // Normal lines
-                    const linesDef = def["lines"];
-                    for(const lineDef of linesDef) {
-                        const line = parseLine(lineDef);
-                        lines.push(line);
+                    const responseDefs = def["value"];
+                    for(const responseDef of responseDefs) {
+                        const line = parseLine(responseDef);
+                        responses.push(line);
                     }
 
-                    if(lines.length > 0) {
-                        linesValue = lines;
+                    if(responses.length > 0) {
+                        responseValue = responses;
                     }
                 }
             } else if(type == "symbol") {
@@ -145,8 +145,8 @@ function parseRule(ruleDef) {
         if(actions.length > 0) {
             data["actions"] = actions;
         }
-        if(linesValue != null) {
-            data["lines"] = linesValue;
+        if(responseValue != null) {
+            data["lines"] = responseValue;
         }
     }
 

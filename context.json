@@ -1,27 +1,14 @@
 {
-    "speaker": {
-        "name": "Fred",
-        "favorite_number": 9
+    "Speaker": {
+        "Name": "Fred",
+        "FavoriteNumber": 9
     },
     
-    "listener": {
-        "name": "Ted",
-        "known": false
+    "Listener": {
+        "Name": "Ted",
+        "Known": false
     },
-    
-    "location": {
-        
-    },
-     
-    "structure": {
-        
-    },
-    
-    "region": {
-        
-    },
-    
-    "world": {
-        "weather": "clear"
+    "World": {
+        "Weather": "clear"
     }
 }
