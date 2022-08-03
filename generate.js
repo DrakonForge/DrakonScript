@@ -4,6 +4,7 @@ import { join } from "path";
 import { logger } from "./docs/scripts/logger.js"
 import { parseSpeechbank, generateParserFile } from "./src/parser.js"
 import { execSync } from "child_process"
+import { pathToFileURL } from "url"
 
 /**
  * This entire script is synchronized to allow for gathering metrics.
@@ -98,7 +99,8 @@ function convertScripts(options, inputDir, outputDir) {
             }
             logger.success("Compiled speechbank to " + outPath);
         } else {
-            throw new Error("Unknown file " + path);
+            // Ignore
+            //throw new Error("Unknown file " + path);
         }
     });
 }
@@ -232,9 +234,10 @@ function parseArgs(args) {
     return options;
 }
 
-function main(args) {
+// pArgs and gLines allow these functions to be overridden
+export function main(args, pArgs = parseArgs, gLines = generateLines) {
     const start = Date.now();
-    let options = parseArgs(args);
+    let options = pArgs(args);
 
     if(!isDirectory(options.output_folder)) {
         mkdirSync(options.output_folder, { recursive: true });
@@ -250,15 +253,17 @@ function main(args) {
     convertScripts(options);
 
     logger.log("\nGenerating lines...");
-    generateLines(options);
+    gLines(options);
 
     const end = Date.now();
     logger.success("\nTotal execution time: " + (end - start) + "ms");
 }
 
-try {
-    main(process.argv);
-} catch(err) {
-    logger.error("Script failed! " + err.name + ": " + err.message);
-    logger.error(err.stack);
+if(import.meta.url === pathToFileURL(process.argv[1]).href) {
+    try {
+        main(process.argv);
+    } catch(err) {
+        logger.error("Script failed! " + err.name + ": " + err.message);
+        logger.error(err.stack);
+    }
 }
