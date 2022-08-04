@@ -56,24 +56,24 @@ group fruit_vendor {
   category greeting {
     // A rule that matches when it is currently morning
     rule (time = "morning") {
-      lines = [
+      response {
         // Possible speech lines the NPC can say if this rule matches
         "Good morning! How are you on this fine day, @name?"
-      ]
+      }
     }
 
     // A rule that matches when the weather is sunny
     rule (weather = "sunny") {
-      lines = [
+      response {
         "It's a fine day to be out and about!"
-      ]
+      }
     }
 
     // A rule with no criteria which always matches
     rule () {
-      lines = [
+      response {
         "Hello! How are you?"
-      ]
+      }
     }
   }
 
@@ -96,7 +96,7 @@ rule [name] ([criterion1, criterion2, criterion3, ...]) {
 
 The **name** and **criteria** values are entirely optional. The rule's **name** allows it to be referenced by other rules, which can be useful in a variety of situations (see **[Other Syntax](#other-syntax)**). The rule's **criteria** define the conditions by which the rule is allowed to match, and are separated by **commas**.
 
-The most common rule statement is `lines = ...`; however, **context manipulation** and **symbol definition** statements are also supported within rule blocks.
+The most common rule statement is `response ...`; however, **context manipulation** and **symbol definition** statements are also supported within rule blocks.
 
 ### Context Keys
 
@@ -159,7 +159,7 @@ All criterion, with the exception of **dummy** and **fail** criterion, can be in
 
 ### Speech Lines
 
-The speech lines or **responses** for a rule can be defined using the `lines = ...` statement. This is generally done by setting the line equal to an array, like so:
+The speech lines or **responses** for a rule can be defined using the `response ...` statement. This is generally done by setting the line equal to an array, like so:
 
 ```js
 response {
@@ -177,7 +177,7 @@ Commas between speech lines are not necessary. In addition, an **inner array** c
 
 ### Symbols
 
-**Symbols** are aliases for various expressions, such as a list, number, or function. They are written in the form `@symbol_name = <exp>`, and can be defined on the **group level** (alongside `category` statements) or on the **rule level** (alongside `lines` and other statements).
+**Symbols** are aliases for various expressions, such as a list, number, or function. They are written in the form `@symbol_name = <exp>`, and can be defined on the **group level** (alongside `category` statements) or on the **rule level** (alongside `response` and other statements).
 
 Symbols are useful for creating a shorthand for various expressions. For example, defining a symbol for a list `@MyList = [ "item 1", "item 2", "item 3" ]` means that instead of writing the entire list again, you can instead reference it with `@MyList`. Symbols are meant to be **immutable**, which means attempting to define a symbol more than one may lead to errors depending on your dialogue system implementation.
 
@@ -223,7 +223,7 @@ rule (named_rule, x < 6) {
 
 #### Response Preset
 
-Instead of the standard `lines = [ ... ]` definition within a rule, you can use `lines = <rule_name>`. This will make the response for this rule exactly match the response of previously defined named rule, which is useful for designing multiple different conditions that can point to the exact same response.
+Instead of the standard `response { ... }` definition within a rule, you can use `response <rule_name>`. This will make the response for this rule exactly match the response of previously defined named rule, which is useful for designing multiple different conditions that can point to the exact same response.
 
 ## Using the Web Editor
 
