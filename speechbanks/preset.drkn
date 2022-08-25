@@ -1,4 +1,4 @@
-preset {
+group Preset {
     @name = #Listener.Name
     @self = #Speaker.Name
 }

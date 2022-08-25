@@ -2,8 +2,7 @@
 import { writeFileSync, existsSync, lstatSync, readFileSync, readdirSync, mkdirSync, statSync, unlinkSync, mkdir } from "fs";
 import { join } from "path";
 import { logger } from "./docs/scripts/logger.js"
-import { parseSpeechbank, generateParserFile } from "./src/parser.js"
-import { execSync } from "child_process"
+import { parseGroup, generateParserFile } from "./src/parser.js"
 import { pathToFileURL } from "url"
 
 /**
@@ -85,7 +84,7 @@ function convertScripts(options, inputDir, outputDir) {
         } else if(isFile(path) && DRKN_FILE.test(file)) {
             // Read DrakonScript file
             let data = readFileSync(path, "utf8");
-            let result = parseSpeechbank(data); // Throws an error if parsing fails
+            let result = parseGroup(data); // Throws an error if parsing fails
 
             // Must be parsed successfully, write it to outputDir under the same path
             let fileName = result[0];
@@ -97,31 +96,12 @@ function convertScripts(options, inputDir, outputDir) {
             } else {
                 writeFileSync(outPath, JSON.stringify(fileData, null, 2));
             }
-            logger.success("Compiled speechbank to " + outPath);
+            logger.success("Compiled database to " + outPath);
         } else {
             // Ignore
             //throw new Error("Unknown file " + path);
         }
     });
-}
-
-// Run the ContextualDialogue jar file to read the JSON and produce speech lines
-function generateLines(options) {
-    let cmd = "java -jar "
-        + join("src", "ContextualDialogue.jar") + " "
-        + options.output_folder + " "
-        + options.context + " "
-        + options.group + " "
-        + options.category + " "
-        + options.count + " "
-        + options.debug + " "
-        + !options.no_output + " "
-        + options.tokenize + " "
-        + options.priority + " "
-        + options.stats;
-
-    // Run java command
-    execSync(cmd, { stdio: 'inherit' });
 }
 
 // MAIN //
@@ -132,16 +112,10 @@ function parseArgs(args) {
         "input_folder": "speechbanks",
         "output_folder": join("generated", "compiled"),
         "context": "context.json",
-        "group": "FruitVendor",
-        "category": "Interact",
         "debug": false,
-        "no_output": false,
         "generate": false,
         "minify": false,
-        "priority": false,
         "stats": false,
-        "tokenize": false,
-        "count": 10
     };
 
     const flags = args.slice(2);
@@ -174,42 +148,14 @@ function parseArgs(args) {
             } else {
                 options["context"] = value;
             }
-        } else if(flag == "--group") {
-            if(value == null) {
-                logger.error("Group option must specify group! \"--group=<group>\"");
-            } else {
-                options["group"] = value;
-            }
-        } else if(flag == "--category") {
-            if(value == null) {
-                logger.error("Category option must specify category! \"--category=<category>\"");
-            } else {
-                options["category"] = value;
-            }
-        } else if(flag == "--count") {
-            if(value == null) {
-                logger.error("Count option must specify number! \"--count=<number>\"");
-            } else {
-                options["count"] = parseInt(value);
-                if(options["count"] < 1) {
-                    logger.error("Number of lines must be at least 1!");
-                    options["count"] = 1;
-                }
-            }
         } else if(flag == "--debug") {
             options["debug"] = true;
-        } else if(flag == "--noprint") {
-            options["no_output"] = true;
         } else if(flag == "--generate") {
             options["generate"] = true;
         } else if(flag == "--minify") {
             options["minify"] = true;
         } else if(flag == "--stats") {
             options["stats"] = true;
-        } else if(flag == "--priority") {
-            options["priority"] = true;
-        } else if(flag == "--tokenize") {
-            options["tokenize"] = true;
         } else if(flag.startsWith("--")) {
             logger.error("Unrecognized flag \"" + flag + "\"!");
             continue;
@@ -235,7 +181,7 @@ function parseArgs(args) {
 }
 
 // pArgs and gLines allow these functions to be overridden
-export function main(args, pArgs = parseArgs, gLines = generateLines) {
+export function main(args, pArgs = parseArgs) {
     const start = Date.now();
     let options = pArgs(args);
 
@@ -251,9 +197,6 @@ export function main(args, pArgs = parseArgs, gLines = generateLines) {
 
     logger.log("\nConverting scripts...");
     convertScripts(options);
-
-    logger.log("\nGenerating lines...");
-    gLines(options);
 
     const end = Date.now();
     logger.success("\nTotal execution time: " + (end - start) + "ms");

@@ -2,7 +2,7 @@
 import { logger as builtInLogger } from "./logger.js"
 let logger = builtInLogger;
 
-const CANNOT_INVERT = ["dummy", "fail"];
+const CANNOT_INVERT = ["Dummy", "Fail"];
 
 class CompileError extends Error {
     constructor(...args) {
@@ -15,19 +15,17 @@ export function setLogger(obj) {
     logger = obj;
 }
 
-export function compileSpeechbank(tree) {
-    const speechbankName = tree["id"];
-    const defs = tree["defs"];
+export function compileGroup(tree) {
+    const name = tree["Id"];
+    const defs = tree["Defs"];
     const symbols = [];
-    const speechbank = {};
+    const categories = [];
     for(const def of defs) {
-        const type = def["type"];
-        if(type == "category") {
-            const categoryInfo = parseCategory(def);
-            const categoryName = categoryInfo[0];
-            const categoryData = categoryInfo[1];
-            speechbank[categoryName] = categoryData;
-        } else if(type == "symbol") {
+        const type = def["Type"];
+        if(type == "Category") {
+            const category = parseCategory(def);
+            categories.push(category);
+        } else if(type == "Symbol") {
             const symbol = parseSymbol(def);
             symbols.push(symbol);
         } else {
@@ -36,43 +34,43 @@ export function compileSpeechbank(tree) {
     }
 
     const data = {};
-    if(tree.hasOwnProperty("parent")) {
-        data["parent"] = tree["parent"];
+    if(tree.hasOwnProperty("Parent")) {
+        data["Parent"] = tree["Parent"];
     }
     if(symbols.length > 0) {
-        data["symbols"] = symbols;
+        data["Symbols"] = symbols;
     }
-    if(Object.keys(speechbank).length > 0) {
-        data["speechbank"] = speechbank;
+    if(Object.keys(categories).length > 0) {
+        data["Categories"] = categories;
     }
 
-    return [speechbankName, data];
+    return [name, data];
 }
 
 function parseCategory(categoryDef) {
-    const defs = categoryDef["defs"];
-    const categoryName = categoryDef["name"];
-    const rules = [];
-
-    for(const def of defs) {
-        const type = def["type"];
-        if(type == "rule") {
-            const rule = parseRule(def);
+    const category = {
+        "Name": categoryDef["Name"]
+    };
+    
+    if(categoryDef.hasOwnProperty("Defs")) {
+        const rules = [];
+        const ruleDefs = categoryDef["Defs"];
+        for(const ruleDef of ruleDefs) {
+            const rule = parseRule(ruleDef);
             rules.push(rule);
-        } else {
-            throw new CompileError("Unknown definition type '" + type + "' in category");
         }
+        category["Rules"] = rules;
     }
-
-    return [categoryName, rules];
+    
+    return category;
 }
 
 function parseRule(ruleDef) {
     const data = {};
-    const criteriaDef = ruleDef["criteria"];
+    const criteriaDef = ruleDef["Criteria"];
 
-    if(ruleDef.hasOwnProperty("name")) {
-        data["name"] = ruleDef["name"];
+    if(ruleDef.hasOwnProperty("Name")) {
+        data["Name"] = ruleDef["Name"];
     }
 
     if(criteriaDef.length > 0) {
@@ -80,143 +78,151 @@ function parseRule(ruleDef) {
         const presets = [];
         for(const criterionDef of criteriaDef) {
             const criterion = parseCriterion(criterionDef);
-            if(criterion.hasOwnProperty("type")) {
+            if(criterion.hasOwnProperty("Type")) {
                 criteria.push(criterion);
             } else {
                 presets.push(criterion);
             }
         }
 
+        // TODO combine with criteria
         if(presets.length > 0) {
-            data["presets"] = presets;
+            data["Presets"] = presets;
         }
 
         if(criteria.length > 0) {
-            data["criteria"] = criteria;
+            data["Criteria"] = criteria;
         }
     }
 
-    if(ruleDef.hasOwnProperty("defs")) {
-        const defs = ruleDef["defs"];
-        const responses = [];
+    if(ruleDef.hasOwnProperty("Defs")) {
+        const defs = ruleDef["Defs"];
         const symbols = [];
-        const actions = [];
-        let responseValue = null;
+        let responses = [];
+        let hasTextResponse = false;
 
         for(const def of defs) {
-            const type = def["type"];
-            if(type == "response") {
-                if(responseValue != null) {
-                    throw new CompileError("Cannot have multiple lines definitions in a rule");
+            const type = def["Type"];
+            if(type == "Text") {
+                if(hasTextResponse) {
+                    throw new CompileError("Cannot have multiple text responses in a rule");
                 }
-                if(def.hasOwnProperty("preset")) {
-                    // Preset definition
-                    const presetDef = def["preset"];
-                    responseValue = extractContext(presetDef, {}, "category", "name");
+                hasTextResponse = true;
+                const responseDefs = def["Value"];
+                let responseValue;
+                if(typeof responseDefs === "string") {
+                    // Named rule
+                    responseValue = extractContext(responseDefs, {}, "Category", "Name");
+                    // TODO: Make sure this is right for named rules, probably doesn't work
                 } else {
                     // Normal lines
-                    const responseDefs = def["value"];
+                    const lines = [];
                     for(const responseDef of responseDefs) {
                         const line = parseLine(responseDef);
-                        responses.push(line);
+                        lines.push(line);
                     }
 
-                    if(responses.length > 0) {
-                        responseValue = responses;
+                    if(lines.length > 0) {
+                        responseValue = lines;
                     }
                 }
-            } else if(type == "symbol") {
+                responses.push({
+                    "Type": "Text",
+                    "Value": responseValue
+                });
+            } else if(type == "Symbol") {
                 const symbol = parseSymbol(def);
                 symbols.push(symbol);
-            } else if(type == "action") {
+            } else if(type == "Context") {
                 // Context action
-                delete def["type"];
-                checkAction(def);
-                actions.push(def);
-            } else if(type == "trigger") {
+                const contextAction = parseContextAction(def);
+                responses.push(contextAction);
+            } else if(type == "Event") {
                 // TODO: Event Triggers, type of non-context action
                 // Nothing for now
             }
         }
 
         if(symbols.length > 0) {
-            data["symbols"] = symbols;
+            data["Symbols"] = symbols;
         }
-        if(actions.length > 0) {
-            data["actions"] = actions;
-        }
-        if(responseValue != null) {
-            data["lines"] = responseValue;
+        if(responses.length) {
+            data["Responses"] = responses;
         }
     }
 
     return data;
 }
 
-function checkAction(action) {
-    const op = action["op"];
-    const value = action.hasOwnProperty("value") ? action["value"] : null;
-    if(value == null) {
-        delete action["value"];
+function parseContextAction(actionDef) {
+    const data = {
+        "Type": "Context",
+        "Value": {
+            "Op": actionDef["Op"],
+            "Table": actionDef["Context"]["Table"],
+            "Key": actionDef["Context"]["Key"]
+        }
+    };
+    
+    let value = null;
+    if(actionDef.hasOwnProperty("Value")) {
+        value = actionDef["Value"]
+        data["Value"]["Value"] = value;
     }
 
-    if(op == "set") {
+    const op = actionDef["Op"];
+    
+    // Check values and types
+    if(op == "Set") {
         if(value == null) {
             throw new CompileError("Value must exist for set operation");
         }
-        if(isContext(value)) {
-            action["op"] = "set_dynamic";
-        } else {
-            if(Array.isArray(value)) {
-                checkListTypes(value);
-                action["op"] = "set_list";
-            } else {
-                action["op"] = "set_static";
-            }
+        if(Array.isArray(value)) {
+            checkListTypes(value);
         }
-    } else if(op == "add") {
+    } else if(op == "Add") {
         if(value == null) {
             throw new CompileError("Value must exist for add operation");
         }
         if(typeof value !== "number") {
             throw new CompileError("Value must be a number for add operation");
         }
-    } else if(op == "sub") {
+    } else if(op == "Sub") {
         if(value == null) {
             throw new CompileError("Value must exist for sub operation");
         }
         if(typeof value !== "number") {
             throw new CompileError("Value must be a number for sub operation");
         }
-        action["op"] = "add";
-        action["value"] = -value;
-    } else if(op == "mult") {
+    } else if(op == "Mult") {
         if(value == null) {
             throw new CompileError("Value must exist for mult operation");
         }
         if(typeof value !== "number") {
             throw new CompileError("Value must be a number for mult operation");
         }
-    } else if(op == "div") {
+    } else if(op == "Div") {
         if(value == null) {
             throw new CompileError("Value must exist for div operation");
         }
         if(typeof value !== "number") {
             throw new CompileError("Value must be a number for div operation");
         }
-        action["op"] = "mult";
-        action["value"] = 1.0 / value;
-    } else if(op == "remove") {
+        if(value == 0) {
+            throw new CompileError("Canot divide by zero for div operation");
+        }
+    } else if(op == "Remove") {
         if(value != null) {
             throw new CompileError("Value should not exist for set operation");
         }
-    } else if(op == "invert") {
+    } else if(op == "Invert") {
         if(value != null) {
             throw new CompileError("Value should not exist for set operation");
         }
     } else {
         throw new CompileError("Invalid operation \"" + op + "\"");
     }
+    return data;
 }
 
 function parseLine(lineDef) {
@@ -229,189 +235,171 @@ function parseLine(lineDef) {
 }
 
 function parseSymbol(symbolDef) {
-    const name = symbolDef["name"];
-    const exp = symbolDef["exp"];
-
+    // 1 level of flattening
     return {
-        "name": name,
-        "exp": exp
+        "Name": symbolDef["Name"],
+        "Type": symbolDef["Value"]["Type"],
+        "Value": symbolDef["Value"]["Value"]
     };
 }
 
 function parseCriterion(criterionDef) {
-    const type = criterionDef["type"];
-    const args = criterionDef.hasOwnProperty("args") ? criterionDef["args"] : null;
+    const type = criterionDef["Type"];
+    const args = criterionDef.hasOwnProperty("Args") ? criterionDef["Args"] : null;
 
-    if(type == "preset") {
+    if(type == "Preset") {
         const arg = args[0];
         if(isContext(arg)) {
-            return extractContext(arg, {}, "category", "name");
+            return extractContext(arg, {}, "Category", "Name");
         }
         throw new CompileError("Invalid criterion, cannot be a lone value unless it is a preset");
     }
 
-    if(type == "eq") {
+    if(type == "Eq") {
         return buildEqualsCriterion(args[0], args[1]);
     }
 
-    if(type == "neq") {
+    if(type == "Neq") {
         return invertCriterion(buildEqualsCriterion(args[0], args[1]));
     }
 
-    if(type == "gt") {
+    if(type == "Gt") {
         const context = args[0];
         const value = toNumber(args[1]);
         if(!isContext(context)) {
             throw new CompileError("First argument must always be a context variable");
         }
         if(typeof value !== "number") {
-            throw new CompileError("> can only be applied to a number");
+            throw new CompileError("Criterion " + type + " can only be applied to a number");
         }
-        const data = buildCriterion("min", context);
-        data["value"] = value;
-        if(isInteger(value)) {
-            data["value"] += 1;
-        } else {
-            logger.warn("> is equivalent to >= when applied to floats, use >= instead");
-        }
+        const data = buildCriterion("Gt", context);
+        data["Value"] = value;
         return data;
     }
 
-    if(type == "lt") {
+    if(type == "Lt") {
         const context = args[0];
         const value = toNumber(args[1]);
         if(!isContext(context)) {
             throw new CompileError("First argument must always be a context variable");
         }
-        const data = buildCriterion("max", context);
-        data["value"] = value;
-        if(isInteger(value)) {
-            data["value"] -= 1;
-        } else {
-            logger.warn("< is equivalent to <= when applied to floats, use >= instead");
+        if(typeof value !== "number") {
+            throw new CompileError("Criterion " + type + " can only be applied to a number");
         }
+        const data = buildCriterion("Lt", context);
+        data["Value"] = value;
         return data;
     }
 
-    if(type == "ge") {
+    if(type == "Ge") {
         const context = args[0];
         const value = toNumber(args[1]);
         if(!isContext(context)) {
             throw new CompileError("First argument must always be a context variable");
         }
-        const data = buildCriterion("min", context);
-        data["value"] = value;
+        if(typeof value !== "number") {
+            throw new CompileError("Criterion " + type + " can only be applied to a number");
+        }
+        const data = buildCriterion("Ge", context);
+        data["Value"] = value;
         return data;
     }
 
-    if(type == "le") {
+    if(type == "Le") {
         const context = args[0];
         const value = toNumber(args[1]);
         if(!isContext(context)) {
             throw new CompileError("First argument must always be a context variable");
         }
-        const data = buildCriterion("max", context);
-        data["value"] = value;
+        if(typeof value !== "number") {
+            throw new CompileError("Criterion " + type + " can only be applied to a number");
+        }
+        const data = buildCriterion("Le", context);
+        data["Value"] = value;
         return data;
     }
 
-    if(type == "le_le") {
+    if(type == "LeLe") {
         const context = args[1];
         const min = toNumber(args[0]);
         const max = toNumber(args[2]);
         if(!isContext(context)) {
             throw new CompileError("Middle argument must always be a context variable");
         }
-        const data = buildCriterion("range", context);
-        data["value"] = [min, max];
+        // TODO: Check min/max types
+        const data = buildCriterion("LeLe", context);
+        data["Value"] = [min, max];
         return data;
     }
 
-    if(type == "lt_le") {
+    if(type == "LtLe") {
         const context = args[1];
         const min = toNumber(args[0]);
         const max = toNumber(args[2]);
         if(!isContext(context)) {
             throw new CompileError("Middle argument must always be a context variable");
         }
-        const data = buildCriterion("range", context);
-        data["value"] = [min, max];
-        if(isInteger(min)) {
-            data["value"][0] += 1;
-        } else {
-            logger.warn("< is equivalent to <= when applied to floats, use >= instead");
-        }
+        // TODO: Check min/max types
+        const data = buildCriterion("LtLe", context);
+        data["Value"] = [min, max];
         return data;
     }
 
-    if(type == "le_lt") {
+    if(type == "LeLt") {
         const context = args[1];
         const min = toNumber(args[0]);
         const max = toNumber(args[2]);
         if(!isContext(context)) {
             throw new CompileError("Middle argument must always be a context variable");
         }
-        const data = buildCriterion("range", context);
-        data["value"] = [min, max];
-        if(isInteger(max)) {
-            data["value"][1] -= 1;
-        } else {
-            logger.warn("< is equivalent to <= when applied to floats, use >= instead");
-        }
+        // TODO: Check min/max types
+        const data = buildCriterion("LeLt", context);
+        data["Value"] = [min, max];
         return data;
     }
 
-    if(type == "lt_lt") {
+    if(type == "LtLt") {
         const context = args[1];
         const min = toNumber(args[0]);
         const max = toNumber(args[2]);
         if(!isContext(context)) {
             throw new CompileError("Middle argument must always be a context variable");
         }
-        const data = buildCriterion("range", context);
-        data["value"] = [min, max];
-        if(isInteger(min)) {
-            data["value"][0] += 1;
-        } else {
-            logger.warn("< is equivalent to <= when applied to floats, use >= instead");
-        }
-        if(isInteger(max)) {
-            data["value"][1] -= 1;
-        } else {
-            logger.warn("< is equivalent to <= when applied to floats, use >= instead");
-        }
+         // TODO: Check min/max types
+        const data = buildCriterion("LtLt", context);
+        data["Value"] = [min, max];
         return data;
     }
 
-    if(type == "exists") {
-        return buildCriterion("exists", args[0]);
+    if(type == "Exists") {
+        return buildCriterion("Exists", args[0]);
     }
 
-    if(type == "empty") {
-        return buildCriterion("empty", args[0]);
+    if(type == "Empty") {
+        return buildCriterion("Empty", args[0]);
     }
 
-    if(type == "nonempty") {
-        return invertCriterion(buildCriterion("empty", args[0]));
+    if(type == "Nonempty") {
+        return invertCriterion(buildCriterion("Empty", args[0]));
     }
 
-    if(type == "includes") {
-        const data = buildCriterion("includes", args[0]);
+    if(type == "Includes") {
+        const data = buildCriterion("Includes", args[0]);
         const value = args[1];
         checkListTypes(value);
         data["value"] = value;
         return data;
     }
 
-    if(type == "excludes") {
-        const data = buildCriterion("includes", args[0]);
+    if(type == "Excludes") {
+        const data = buildCriterion("Excludes", args[0]);
         const value = args[1];
         checkListTypes(value);
         data["value"] = value;
         return invertCriterion(data);
     }
 
-    if(type == "dummy") {
+    if(type == "Dummy") {
         const value = Number(args[0]);
         if(!isInteger(value)) {
             throw new CompileError("Dummy value must be an integer");
@@ -420,12 +408,12 @@ function parseCriterion(criterionDef) {
             throw new CompileError("'dummy 0' is redundant");
         }
         return {
-            "type": "dummy",
-            "value": value
+            "Type": "Dummy",
+            "Value": value
         };
     }
 
-    if(type == "fail") {
+    if(type == "Fail") {
         const value = Number(args[0]);
         if(value >= 1) {
             throw new CompileError("'fail " + value + "' will always fail");
@@ -433,17 +421,17 @@ function parseCriterion(criterionDef) {
             throw new CompileError("'fail " + value + "' will always succeed");
         }
         return {
-            "type": "fail",
-            "value": value
+            "Type": "Fail",
+            "Value": value
         };
     }
 
-    if(type == "negate") {
+    if(type == "Negate") {
         const criterion = parseCriterion(args[0]);
-        if(!criterion.hasOwnProperty("type")) {
+        if(!criterion.hasOwnProperty("Type")) {
             throw new CompileError("Cannot invert a preset");
         }
-        if(CANNOT_INVERT.includes(criterion["type"])) {
+        if(CANNOT_INVERT.includes(criterion["Type"])) {
             throw new CompileError("Cannot invert criterion of type " + criterion["type"]);
         }
         return invertCriterion(criterion);
@@ -457,10 +445,10 @@ function buildEqualsCriterion(context, value) {
         throw new CompileError("First argument must always be a context variable");
     }
 
-    const data = buildCriterion("equals", context);
+    const data = buildCriterion("Equals", context);
 
     if(isContext(value)) {
-        data["type"] = "equals_dynamic";
+        data["Type"] = "equals_dynamic";
         extractContext(value, data, "other_table", "other_field", data);
     } else {
         if(isDecimal(value)) {
@@ -477,7 +465,7 @@ function buildEqualsCriterion(context, value) {
             }
 
         }
-        data["value"] = value;
+        data["Value"] = value;
     }
     return data;
 }
@@ -491,13 +479,13 @@ function checkListTypes(arr) {
 }
 
 function buildCriterion(type, context) {
-    const data = { "type": type };
+    const data = { "Type": type };
     extractContext(context, data);
     return data;
 }
 
 function isContext(arg) {
-    return typeof arg === "object" && arg.hasOwnProperty("context");
+    return typeof arg === "object" && arg.hasOwnProperty("Table") && arg.hasOwnProperty("Key");
 }
 
 function isDecimal(arg) {
@@ -509,15 +497,15 @@ function isInteger(arg) {
 }
 
 function invertCriterion(criterion) {
-    if(criterion.hasOwnProperty("inverse")) {
+    if(criterion.hasOwnProperty("Inverse")) {
         logger.warn("Redundant double inversion on criterion of type " + criterion["type"]);
-        if(criterion["inverse"]) {
-            delete criterion["inverse"];
+        if(criterion["Inverse"]) {
+            delete criterion["Inverse"];
         } else {
-            criterion["inverse"] = true;
+            criterion["Inverse"] = true;
         }
     } else {
-        criterion["inverse"] = true;
+        criterion["Inverse"] = true;
     }
     return criterion;
 }
@@ -530,10 +518,8 @@ function toNumber(value) {
     return value;
 }
 
-function extractContext(context, obj = {}, tableName = "table", contextName = "field") {
-    if(context.hasOwnProperty("table")) {
-        obj[tableName] = context["table"];
-    }
-    obj[contextName] = context["context"];
+function extractContext(context, obj = {}, tableName = "Table", contextName = "Field") {
+    obj[tableName] = context["Table"];
+    obj[contextName] = context["Context"];
     return obj;
 }

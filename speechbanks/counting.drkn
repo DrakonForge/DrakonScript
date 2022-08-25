@@ -1,4 +1,4 @@
-group Counting {
+group Counting extends Preset {
   category Interact {
     rule(!Speaker.Count exists) {
       set Speaker.Count = 0

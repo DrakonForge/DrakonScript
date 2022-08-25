@@ -1,6 +1,8 @@
-group FruitVendor {
+group FruitVendor extends Preset {
   @fruits = [ "apples", "oranges", "mangoes", "pineapples", "watermelons", "avocadoes",
              "cherries", "grapes", "tangerines" ]
+  @int = 5
+  @float = 5.0
   
   category Interact {
     rule (!Listener.Conversation exists, Listener.Known = false) {
@@ -55,7 +57,7 @@ group FruitVendor {
     }
     
     // weather -> world.weather
-    rule(Listener.Conversation >= 4, Weather = "rain", fail 0.8) {
+    rule(Listener.Conversation >= 4, World.Weather = "rain", fail 0.8) {
       set Listener.Conversation += 1
       response {
         "My, the weather looks dreary today!"
@@ -64,7 +66,7 @@ group FruitVendor {
       }
     }
     
-    rule(Listener.Conversation >= 4, Weather = "clear", fail 0.8) {
+    rule(Listener.Conversation >= 4, World.Weather = "clear", fail 0.8) {
       set Listener.Conversation += 1
       response {
         "Ah, lovely clear skies today!"

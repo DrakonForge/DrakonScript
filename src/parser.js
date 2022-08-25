@@ -3,7 +3,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import pkg from 'jison'
-import { compileSpeechbank } from "../docs/scripts/compiler.js"
+import { compileGroup } from "../docs/scripts/compiler.js"
 import { logger } from "../docs/scripts/logger.js";
 
 const { Parser } = pkg;
@@ -32,10 +32,10 @@ export function generateParserFile() {
     logger.success("Parser file generated");
 }
 
-export function parseSpeechbank(data) {
+export function parseGroup(data) {
     if(parser == null) {
         createParser();
     }
     
-    return compileSpeechbank(parser.parse(data));
+    return compileGroup(parser.parse(data));
 }

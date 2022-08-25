@@ -16,8 +16,13 @@ stringliteral \"{stringcontents}*\"
 \s+                             /* skip whitespace */
 
 /* Keywords */
+
+// Multi-word phrases--a little hacky since whitespace must be exact
+"speech group"  return 'speech group';
+"simple group"  return 'simple group';
+"category override" return 'category override';
+
 "group"         return 'group';
-"preset"        return 'preset';
 "extends"       return 'extends';
 "category"      return 'category';
 "rule"          return 'rule';
@@ -38,7 +43,7 @@ stringliteral \"{stringcontents}*\"
 /* Tokens */
 [a-zA-Z][a-zA-Z_0-9]*                               return 'Id';
 "@"[a-zA-Z][a-zA-Z_0-9]*  yytext = yytext.slice(1); return 'Symbol';
-"#"[a-zA-Z][a-zA-Z_.0-9]*    yytext = yytext.slice(1); return 'Context';
+"#"[a-zA-Z][a-zA-Z_0-9]*"."[a-zA-Z][a-zA-Z_.0-9]*    yytext = yytext.slice(1); return 'Context';
 ("-")?(0|[1-9][0-9]*)"."[0-9]+                      return 'Float';
 ("-")?(0|[1-9][0-9]*)                               return 'Integer'
 {stringliteral}              yytext = yytext.slice(1,-1).replace(/\\/g,""); return 'String'
@@ -78,22 +83,24 @@ stringliteral \"{stringcontents}*\"
 /* language grammar */
 
 /* Define the starting rule */
-%start Speechbank
+%start Root
 
 %%
 
-Speechbank 
+Root 
     : Group EOF
         {return $1;}
     ;
 
 Group
     : 'group' Id '{' GroupDefs '}'
-        {$$ = {"id": $2, "defs": $4};}
+        {$$ = {"Id": $2, "Defs": $4};}
     | 'group' Id 'extends' Id '{' GroupDefs '}'
-        {$$ = {"id": $2, "parent": $4, "defs": $6};}
-    | 'preset' '{' GroupDefs '}'
-        {$$ = {"id": "Preset", "defs": $3};}
+        {$$ = {"Id": $2, "Parent": $4, "Defs": $6};}
+    | 'speech group' Id '{' GroupDefs '}'
+        {$$ = {"Id": "$2", "Type": "Speech", "Defs": $4};}
+    | 'simple group' Id '{' GroupDefs '}'
+        {$$ = {"Id": "$2", "Type": "Simple", "Defs": $4};}
     ;
 
 GroupDefs
@@ -105,9 +112,15 @@ GroupDefs
 
 GroupDef
     : 'category' Id '{' CatDefs '}'
-        {$$ = {"type": "category", "name": $2, "defs": $4};}
+        {$$ = {"Type": "Category", "Name": $2, "Defs": $4};}
+    | 'category override' Id '{' CatDefs '}'
+        {$$ = {"Type": "Category", "Name": $2, "Defs": $4, "Inherit": false};}
+    | 'category' Id
+        {$$ = {"Type": "Category", "Name": $2};}
+    | 'category override' Id
+        {$$ = {"Type": "Category", "Name": $2, "Inherit": false};}
     | Symbol '=' Exp
-        {$$ = {"type": "symbol", "name": $1, "exp": $3};}
+        {$$ = {"Type": "Symbol", "Name": $1, "Value": $3};}
     ;
 
 CatDefs
@@ -120,13 +133,13 @@ CatDefs
 CatDef
     /* Rule without label */
     : 'rule' '(' CriteriaOrEmpty ')' '{' RuleDefs '}'
-        {$$ = {"type": "rule", "criteria": $3, "defs": $6}}
+        {$$ = {"Criteria": $3, "Defs": $6}}
     /* Rule with label */
     | 'rule' Id '(' CriteriaOrEmpty ')' '{' RuleDefs '}'
-        {$$ = {"type": "rule", "name": $2, "criteria": $4, "defs": $7}}
+        {$$ = {"Name": $2, "Criteria": $4, "Defs": $7}}
     /* Empty rule with a label */
     | 'rule' Id '(' CriteriaOrEmpty ')'
-        {$$ = {"type": "rule", "name": $2, "criteria": $4}}
+        {$$ = {"Name": $2, "Criteria": $4}}
     ;
 
 CriteriaOrEmpty
@@ -145,43 +158,43 @@ Criteria
     
 Criterion
     : Val
-        {$$ = {"type": "preset", "args": [$1]};}
+        {$$ = {"Type": "Named", "Args": [$1]};}
     | Val '=' PValList
-        {$$ = {"type": "eq", "args": [$1, $3]};}
+        {$$ = {"Type": "Eq", "Args": [$1, $3]};}
     | Val '!=' PValList
-        {$$ = {"type": "neq", "args": [$1, $3]};}
+        {$$ = {"Type": "Neq", "Args": [$1, $3]};}
     | Val '>' Val
-        {$$ = {"type": "gt", "args": [$1, $3]};}
+        {$$ = {"Type": "Gt", "Args": [$1, $3]};}
     | Val '<' Val
-        {$$ = {"type": "lt", "args": [$1, $3]};}
+        {$$ = {"Type": "Lt", "Args": [$1, $3]};}
     | Val '>=' Val
-        {$$ = {"type": "ge", "args": [$1, $3]};}
+        {$$ = {"Type": "Ge", "Args": [$1, $3]};}
     | Val '<=' Val
-        {$$ = {"type": "le", "args": [$1, $3]};}
+        {$$ = {"Type": "Le", "Args": [$1, $3]};}
     | Val '<=' TId '<=' Val
-        {$$ = {"type": "le_le", "args": [$1, $3, $5]};}
+        {$$ = {"Type": "LeLe", "Args": [$1, $3, $5]};}
     | Val '<' TId '<=' Val
-        {$$ = {"type": "lt_le", "args": [$1, $3, $5]};}
+        {$$ = {"Type": "LtLe", "Args": [$1, $3, $5]};}
     | Val '<=' TId '<' Val
-        {$$ = {"type": "le_lt", "args": [$1, $3, $5]};}
+        {$$ = {"Type": "LeLt", "Args": [$1, $3, $5]};}
     | Val '<' TId '<' Val
-        {$$ = {"type": "lt_lt", "args": [$1, $3, $5]};}
+        {$$ = {"Type": "LtLt", "Args": [$1, $3, $5]};}
     | TId 'exists'
-        {$$ = {"type": "exists", "args": [$1]};}
+        {$$ = {"Type": "Exists", "Args": [$1]};}
     | TId 'empty'
-        {$$ = {"type": "empty", "args": [$1]};}
+        {$$ = {"Type": "Empty", "Args": [$1]};}
     | TId 'nonempty'
-        {$$ = {"type": "nonempty", "args": [$1]};}
+        {$$ = {"Type": "Nonempty", "Args": [$1]};}
     | TId 'includes' PValList
-        {$$ = {"type": "includes", "args": [$1, $3]};}
+        {$$ = {"Type": "Includes", "Args": [$1, $3]};}
     | TId 'excludes' PValList
-        {$$ = {"type": "excludes", "args": [$1, $3]};}
+        {$$ = {"Type": "Excludes", "Args": [$1, $3]};}
     | 'dummy' Integer
-        {$$ = {"type": "dummy", "args": [$2]};}
+        {$$ = {"Type": "Dummy", "Args": [$2]};}
     | 'fail' Number
-        {$$ = {"type": "fail", "args": [$2]};}
+        {$$ = {"Type": "Fail", "Args": [$2]};}
     | '!' Criterion
-        {$$ = {"type": "negate", "args": [$2]};}
+        {$$ = {"Type": "Negate", "Args": [$2]};}
     ;
     
 RuleDefs
@@ -193,38 +206,38 @@ RuleDefs
 
 RuleDef
     : 'response' '{' Responses '}'
-        {$$ = {"type": "response", "value": $3};}
+        {$$ = {"Type": "Text", "Value": $3};}
     | 'response' TId
-        {$$ = {"type": "response", "preset": $2};}
+        {$$ = {"Type": "Text", "Value": $2};}
     /* Symbol */
     | Symbol '=' Exp
-        {$$ = {"type": "symbol", "name": $1, "exp": $3};}
+        {$$ = {"Type": "Symbol", "Name": $1, "Value": $3};}
     /* Context */
     | 'set' TId '=' ValOrList
-        {$$ = {"type": "action", "op": "set", "context": $2, "value": $4 };}
+        {$$ = {"Type": "Context", "Op": "Set", "Context": $2, "Value": $4 };}
     | 'set' TId '+=' Val
-        {$$ = {"type": "action", "op": "add", "context": $2, "value": $4 };}
+        {$$ = {"Type": "Context", "Op": "Add", "Context": $2, "Value": $4 };}
     | 'set' TId '-=' Val
-        {$$ = {"type": "action", "op": "sub", "context": $2, "value": $4 };}
+        {$$ = {"Type": "Context", "Op": "Sub", "Context": $2, "Value": $4 };}
     | 'set' TId '*=' Val
-        {$$ = {"type": "action", "op": "mult", "context": $2, "value": $4 };}
+        {$$ = {"Type": "Context", "Op": "Mult", "Context": $2, "Value": $4 };}
     | 'set' TId '/=' Val
-        {$$ = {"type": "action", "op": "div", "context": $2, "value": $4 };}
+        {$$ = {"Type": "Context", "Op": "Div", "Context": $2, "Value": $4 };}
     | 'set' '++' TId
-        {$$ = {"type": "action", "op": "add", "context": $3, "value": 1 };}
+        {$$ = {"Type": "Context", "Op": "Add", "Context": $3, "Value": 1 };}
     | 'set' '--' TId
-        {$$ = {"type": "action", "op": "sub", "context": $3, "value": 1 };}
+        {$$ = {"Type": "Context", "Op": "Sub", "Context": $3, "Value": 1 };}
     | 'set' TId '++'
-        {$$ = {"type": "action", "op": "add", "context": $2, "value": 1 };}
+        {$$ = {"Type": "Context", "Op": "Add", "Context": $2, "Value": 1 };}
     | 'set' TId '--'
-        {$$ = {"type": "action", "op": "sub", "context": $2, "value": 1 };}
+        {$$ = {"Type": "Context", "Op": "Sub", "Context": $2, "Value": 1 };}
     | 'remove' TId
-        {$$ = {"type": "action", "op": "remove", "context": $2 };}
+        {$$ = {"Type": "Context", "Op": "Remove", "Context": $2 };}
     | 'invert' TId
-        {$$ = {"type": "action", "op": "invert", "context": $2 };}
+        {$$ = {"Type": "Context", "Op": "Invert", "Context": $2 };}
     /* Triggers */
     | 'trigger' TId '(' ExpsOrEmpty ')'
-        {$$ = {"type": "trigger", "name": $2, "args": $};}
+        {$$ = {"Type": "Event", "Name": $2, "Args": $};}
     ;
 
 Responses
@@ -256,49 +269,51 @@ Response
     ;
 
 Exp3
-    : Number
-        {$$ = $1;}
+    : Integer
+        {$$ = {"Type": "Integer", "Value": $1};}
+    | Float
+        {$$ = {"Type": "Float", "Value": $1};}
     | String
-        {$$ = $1;}
+        {$$ = {"Type": "String", "Value": $1};}
     | Context
-        {let i = $1.indexOf('.'); if(i > -1) {$$ = {"table": $1.substring(0, i), "context": $1.substring(i + 1)};} else { $$ = {"context": $1};}}
+        {let i = $1.indexOf('.'); $$ = {"Type": "Context", "Value": {"Table": $1.substring(0, i), "Key": $1.substring(i + 1)}};}
     | Symbol
-        {$$ = "@" + $1;}
+        {$$ = {"Type": "Symbol", "Value": $1};}
     | true
-        {$$ = true;}
+        {$$ = {"Type": "Boolean", "Value": true};}
     | false
-        {$$ = false;}
+        {$$ = {"Type": "Boolean", "Value": false};}
     ;
 
 Exp2
     : Exp3
         {$$ = $1;}
     | Symbol '(' ExpsOrEmpty ')'
-        {$$ = {"function": $1, "args": $3};}
+        {$$ = {"Type": "Function", "Value": {"Name": $1, "Args": $3}};}
     | '[' ExpsOrEmpty ']'
-        {$$ = $2;}
+        {$$ = {"Type": "List", "Value": $2};}
     | '!' Exp2
-        {$$ = {"function": "negate", "args": [$2]}}
+        {$$ = {"Type": "Function", "Value": { "Name": "negate", "Args": [$2]}};}
     ;
     
 Exp1
     : Exp2
         {$$ = $1;}
     | Exp1 '*' Exp2
-        {$$ = {"function": "mult", "args": [$1, $3]};}
+        {$$ = {"Type": "Function", "Value": { "Name": "negate", "Args": [$1, $3]}};}
     | Exp1 '/' Exp2
-        {$$ = {"function": "div", "args": [$1, $3]};}
+        {$$ = {"Type": "Function", "Value": { "Name": "div", "Args": [$1, $3]}};}
     | Exp1 '%' Exp3
-        {$$ = {"function": "mod", "args": [$1, $3]};}
+        {$$ = {"Type": "Function", "Value": { "Name": "mod", "Args": [$1, $3]}};}
     ;
 
 Exp
     : Exp1
         {$$ = $1;}
     | Exp '+' Exp1
-        {$$ = {"function": "add", "args": [$1, $3]};}
+        {$$ = {"Type": "Function", "Value": { "Name": "add", "Args": [$1, $3]}};}
     | Exp '-' Exp1
-        {$$ = {"function": "sub", "args": [$1, $3]};}
+        {$$ = {"Type": "Function", "Value": { "Name": "sub", "Args": [$1, $3]}};}
     ;
     
     
@@ -317,10 +332,8 @@ Exps
     ;
 
 TId
-    : Id
-        {$$ = {"context": $1};}
-    | Id '.' Id
-        {$$ = {"table": $1, "context": $3};}
+    : Id '.' Id
+        {$$ = {"Table": $1, "Key": $3};}
     ;
 
 Val

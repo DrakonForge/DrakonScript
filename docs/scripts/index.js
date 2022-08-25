@@ -1,5 +1,5 @@
 "use strict"
-import { compileSpeechbank, setLogger } from "./compiler.js"
+import { compileGroup, setLogger } from "./compiler.js"
 import { parser } from "./drakonscript-parser.js"
 
 // LOGGER //
@@ -412,7 +412,7 @@ function compile() {
     let text = drknEditor.getValue();
     let result;
     try {
-        result = compileSpeechbank(parser.parse(text));
+        result = compileGroup(parser.parse(text));
     } catch(err) {
         logger.error("Failed to parse! " + err.name + ": " + err.message);
         ensureConsoleVisible();
@@ -505,7 +505,7 @@ function downloadJSON() {
 
     let fileName;
     try {
-        const parsed = parser.parseSpeechbank(drknEditor.getValue());
+        const parsed = parser.parseGroup(drknEditor.getValue());
         fileName = parsed[0];
     } catch(err) {
         fileName = "script";
